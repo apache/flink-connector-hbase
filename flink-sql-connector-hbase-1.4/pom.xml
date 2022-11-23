@@ -20,21 +20,19 @@ under the License.
 <project xmlns="http://maven.apache.org/POM/4.0.0"
 		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<parent>
-		<artifactId>flink-connectors</artifactId>
-		<groupId>org.apache.flink</groupId>
-		<version>1.17-SNAPSHOT</version>
-	</parent>
+
 	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.apache.flink</groupId>
+		<artifactId>flink-connector-hbase-parent</artifactId>
+		<version>1.0-SNAPSHOT</version>
+	</parent>
 
 	<artifactId>flink-sql-connector-hbase-1.4</artifactId>
 	<name>Flink : Connectors : SQL : HBase 1.4</name>
 
 	<packaging>jar</packaging>
-
-	<properties>
-		<japicmp.skip>true</japicmp.skip>
-	</properties>
 
 	<dependencies>
 		<dependency>
@@ -43,17 +41,6 @@ under the License.
 			<version>${project.version}</version>
 		</dependency>
 	</dependencies>
-
-	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<!-- HBase only works with Zookeper 3.4 -->
-				<groupId>org.apache.zookeeper</groupId>
-				<artifactId>zookeeper</artifactId>
-				<version>3.4.14</version>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
 
 	<build>
 		<plugins>

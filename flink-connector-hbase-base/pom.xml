@@ -24,33 +24,25 @@ under the License.
 
 	<parent>
 		<groupId>org.apache.flink</groupId>
-		<artifactId>flink-connectors</artifactId>
-		<version>1.17-SNAPSHOT</version>
+		<artifactId>flink-connector-hbase-parent</artifactId>
+		<version>1.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>flink-connector-hbase-base</artifactId>
-	<name>Flink : Connectors : HBase base</name>
+	<name>Flink : Connectors : HBase Base</name>
 	<packaging>jar</packaging>
 
-	<properties>
-		<hbase.version>1.4.3</hbase.version>
-	</properties>
-
 	<dependencies>
-
 		<!-- Core -->
-
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-core</artifactId>
-			<version>${project.version}</version>
 			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-streaming-java</artifactId>
-			<version>${project.version}</version>
 			<scope>provided</scope>
 		</dependency>
 
@@ -60,23 +52,35 @@ under the License.
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-table-api-java-bridge</artifactId>
-			<version>${project.version}</version>
 			<scope>provided</scope>
 			<optional>true</optional>
 		</dependency>
 
 		<!-- HBase -->
-
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-common</artifactId>
 			<scope>provided</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>com.google.guava</groupId>
+					<artifactId>guava</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>log4j</groupId>
+					<artifactId>log4j</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.hbase</groupId>
 			<artifactId>hbase-client</artifactId>
-			<version>${hbase.version}</version>
+			<version>${hbase1.version}</version>
 			<exclusions>
 				<!-- Remove unneeded dependency, which is conflicting with our jetty-util version. -->
 				<exclusion>
@@ -137,6 +141,14 @@ under the License.
 					<artifactId>hadoop-hdfs</artifactId>
 				</exclusion>
 				<exclusion>
+					<groupId>commons-codec</groupId>
+					<artifactId>commons-codec</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>commons-io</groupId>
+					<artifactId>commons-io</artifactId>
+				</exclusion>
+				<exclusion>
 					<groupId>log4j</groupId>
 					<artifactId>log4j</artifactId>
 				</exclusion>
@@ -151,7 +163,6 @@ under the License.
 			<!-- Bump hbase netty dependency -->
 			<groupId>io.netty</groupId>
 			<artifactId>netty-all</artifactId>
-			<version>4.1.46.Final</version>
 		</dependency>
 
 		<dependency>
@@ -213,5 +224,4 @@ under the License.
 			</build>
 		</profile>
 	</profiles>
-
 </project>
