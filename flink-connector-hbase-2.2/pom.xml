@@ -24,43 +24,38 @@ under the License.
 
 	<parent>
 		<groupId>org.apache.flink</groupId>
-		<artifactId>flink-connectors</artifactId>
-		<version>1.17-SNAPSHOT</version>
+		<artifactId>flink-connector-hbase-parent</artifactId>
+		<version>1.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>flink-connector-hbase-2.2</artifactId>
 	<name>Flink : Connectors : HBase 2.2</name>
 	<packaging>jar</packaging>
 
-	<properties>
-		<hbase.version>2.2.3</hbase.version>
-	</properties>
-
 	<dependencies>
-
 		<!-- Core -->
-
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-core</artifactId>
-			<version>${project.version}</version>
 			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-streaming-java</artifactId>
-			<version>${project.version}</version>
 			<scope>provided</scope>
 		</dependency>
 
 		<!-- Flink HBase -->
-
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-connector-hbase-base</artifactId>
 			<version>${project.version}</version>
 			<exclusions>
+				<exclusion>
+					<groupId>org.apache.hbase</groupId>
+					<artifactId>hbase-client</artifactId>
+				</exclusion>
 				<exclusion>
 					<groupId>org.apache.hbase</groupId>
 					<artifactId>hbase-server</artifactId>
@@ -74,23 +69,30 @@ under the License.
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-table-api-java-bridge</artifactId>
-			<version>${project.version}</version>
 			<scope>provided</scope>
 			<optional>true</optional>
 		</dependency>
 
 		<!-- HBase -->
-
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-common</artifactId>
 			<scope>provided</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>log4j</groupId>
+					<artifactId>log4j</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.hbase</groupId>
 			<artifactId>hbase-client</artifactId>
-			<version>${hbase.version}</version>
 			<exclusions>
 				<!-- Remove unneeded dependency, which is conflicting with our jetty-util version. -->
 				<exclusion>
@@ -161,21 +163,12 @@ under the License.
 			</exclusions>
 		</dependency>
 
-		<dependency>
-			<!-- Bump hbase netty dependency -->
-			<groupId>io.netty</groupId>
-			<artifactId>netty-all</artifactId>
-			<version>4.1.46.Final</version>
-		</dependency>
-
-		<dependency>
-			<!-- Replaces Hbase log4j dependency -->
-			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-1.2-api</artifactId>
-			<scope>provided</scope>
-		</dependency>
-
 		<!-- Tests -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
 
 		<dependency>
 			<groupId>org.apache.flink</groupId>
@@ -203,34 +196,19 @@ under the License.
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-clients</artifactId>
-			<version>${project.version}</version>
+			<version>${flink.version}</version>
 			<scope>test</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-hadoop-compatibility_${scala.binary.version}</artifactId>
-			<version>${project.version}</version>
-			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>org.apache.flink</groupId>
-					<artifactId>flink-shaded-include-yarn_${scala.binary.version}</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
-		<dependency>
-			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-test-utils</artifactId>
-			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-table-common</artifactId>
-			<version>${project.version}</version>
 			<type>test-jar</type>
 			<scope>test</scope>
 		</dependency>
@@ -238,20 +216,12 @@ under the License.
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-table-planner_${scala.binary.version}</artifactId>
-			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-table-api-scala-bridge_${scala.binary.version}</artifactId>
-			<version>${project.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-table-planner_${scala.binary.version}</artifactId>
-			<version>${project.version}</version>
 			<type>test-jar</type>
 			<scope>test</scope>
 		</dependency>
@@ -259,7 +229,7 @@ under the License.
 		<dependency>
 			<groupId>org.apache.hbase</groupId>
 			<artifactId>hbase-server</artifactId>
-			<version>${hbase.version}</version>
+			<version>${hbase2.version}</version>
 			<type>test-jar</type>
 			<scope>test</scope>
 			<exclusions>
@@ -275,13 +245,29 @@ under the License.
 					<groupId>org.glassfish</groupId>
 					<artifactId>javax.el</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>commons-cli</groupId>
+					<artifactId>commons-cli</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.commons</groupId>
+					<artifactId>commons-compress</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>commons-codec</groupId>
+					<artifactId>commons-codec</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.javassist</groupId>
+					<artifactId>javassist</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.hbase</groupId>
 			<artifactId>hbase-zookeeper</artifactId>
-			<version>${hbase.version}</version>
+			<version>${hbase2.version}</version>
 			<type>test-jar</type>
 			<scope>test</scope>
 			<exclusions>
@@ -299,7 +285,7 @@ under the License.
 		<dependency>
 			<groupId>org.apache.hbase</groupId>
 			<artifactId>hbase-common</artifactId>
-			<version>${hbase.version}</version>
+			<version>${hbase2.version}</version>
 			<type>test-jar</type>
 			<scope>test</scope>
 			<exclusions>
@@ -317,7 +303,7 @@ under the License.
 		<dependency>
 			<groupId>org.apache.hbase</groupId>
 			<artifactId>hbase-mapreduce</artifactId>
-			<version>${hbase.version}</version>
+			<version>${hbase2.version}</version>
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
@@ -336,47 +322,11 @@ under the License.
 		</dependency>
 
 		<dependency>
-			<groupId>org.apache.hadoop</groupId>
-			<artifactId>hadoop-minicluster</artifactId>
-			<version>${flink.hadoop.version}</version>
-			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>log4j</groupId>
-					<artifactId>log4j</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>slf4j-log4j12</artifactId>
-				</exclusion>
-				<exclusion>
-					<!-- This dependency is no longer shipped with the JDK since Java 9.-->
-					<groupId>jdk.tools</groupId>
-					<artifactId>jdk.tools</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
-		<dependency>
 			<groupId>org.apache.hbase</groupId>
 			<artifactId>hbase-hadoop-compat</artifactId>
-			<version>${hbase.version}</version>
+			<version>${hbase2.version}</version>
 			<scope>test</scope>
 			<type>test-jar</type>
-			<exclusions>
-				<exclusion>
-					<groupId>log4j</groupId>
-					<artifactId>log4j</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
-		<dependency>
-			<groupId>org.apache.hadoop</groupId>
-			<artifactId>hadoop-hdfs</artifactId>
-			<version>${flink.hadoop.version}</version>
-			<type>test-jar</type>
-			<scope>test</scope>
 			<exclusions>
 				<exclusion>
 					<groupId>log4j</groupId>
@@ -388,7 +338,7 @@ under the License.
 		<dependency>
 			<groupId>org.apache.hbase</groupId>
 			<artifactId>hbase-hadoop2-compat</artifactId>
-			<version>${hbase.version}</version>
+			<version>${hbase2.version}</version>
 			<scope>test</scope>
 			<type>test-jar</type>
 			<exclusions>
@@ -399,25 +349,70 @@ under the License.
 			</exclusions>
 		</dependency>
 
-		<!-- ArchUit test dependencies -->
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-minicluster</artifactId>
+			<scope>test</scope>
+		</dependency>
 
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-hdfs</artifactId>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- ArchUit test dependencies -->
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-architecture-tests-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-
 	</dependencies>
 
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
-				<!-- HBase only works with Zookeper 3.4 -->
-				<groupId>org.apache.zookeeper</groupId>
-				<artifactId>zookeeper</artifactId>
-				<version>3.4.14</version>
+				<groupId>commons-io</groupId>
+				<artifactId>commons-io</artifactId>
+				<version>2.11.0</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-lang3</artifactId>
+				<version>3.12.0</version>
+			</dependency>
+
+			<dependency>
+				<groupId>commons-logging</groupId>
+				<artifactId>commons-logging</artifactId>
+				<version>1.2</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.google.guava</groupId>
+				<artifactId>guava</artifactId>
+				<version>16.0.1</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.hbase</groupId>
+				<artifactId>hbase-client</artifactId>
+				<version>${hbase2.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.htrace</groupId>
+				<artifactId>htrace-core4</artifactId>
+				<version>4.2.0-incubating</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.jruby.jcodings</groupId>
+				<artifactId>jcodings</artifactId>
+				<version>1.0.18</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
-
 </project>

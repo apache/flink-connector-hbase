@@ -137,7 +137,8 @@ public abstract class HBaseTestingClusterAutoStarter extends AbstractTestBase {
         // There is no Guava version in between that works with both.
         Assume.assumeTrue(
                 "This test is skipped for Hadoop versions above 3",
-                VersionUtil.compareVersions(System.getProperty("hadoop.version"), "3.0.0") < 0);
+                VersionUtil.compareVersions(System.getProperty("hadoop.version", "2.8.5"), "3.0.0")
+                        < 0);
 
         LOG.info("HBase minicluster: Starting");
 
