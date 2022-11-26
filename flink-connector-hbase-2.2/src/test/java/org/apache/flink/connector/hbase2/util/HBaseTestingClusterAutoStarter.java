@@ -128,7 +128,7 @@ public class HBaseTestingClusterAutoStarter {
     @BeforeClass
     public static void setUp() throws Exception {
         // HBase 2.2.3 HBaseTestingUtility works with only a certain range of hadoop versions
-        String hadoopVersion = System.getProperty("hadoop.version");
+        String hadoopVersion = System.getProperty("hadoop.version", "2.8.5");
         Assume.assumeTrue(HADOOP_VERSION_RANGE.contains(hadoopVersion));
         TEST_UTIL.startMiniCluster(1);
 
