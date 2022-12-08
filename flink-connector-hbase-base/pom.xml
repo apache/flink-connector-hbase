@@ -141,14 +141,6 @@ under the License.
 					<artifactId>hadoop-hdfs</artifactId>
 				</exclusion>
 				<exclusion>
-					<groupId>commons-codec</groupId>
-					<artifactId>commons-codec</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>commons-io</groupId>
-					<artifactId>commons-io</artifactId>
-				</exclusion>
-				<exclusion>
 					<groupId>log4j</groupId>
 					<artifactId>log4j</artifactId>
 				</exclusion>
