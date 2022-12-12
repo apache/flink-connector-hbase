@@ -39,12 +39,6 @@ under the License.
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-connector-hbase-2.2</artifactId>
 			<version>${project.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.apache.hbase</groupId>
-					<artifactId>hbase-client</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 	</dependencies>
 
