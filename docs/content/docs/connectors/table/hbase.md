@@ -38,7 +38,7 @@ HBase always works in upsert mode for exchange changelog messages with the exter
 Dependencies
 ------------
 
-{{< sql_download_table "hbase" >}}
+{{< sql_connector_download_table "hbase" 3.0.0 >}}
 
 The HBase connector is not part of the binary distribution.
 See how to link with it for cluster execution [here]({{< ref "docs/dev/configuration/overview" >}}).
