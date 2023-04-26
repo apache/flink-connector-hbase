@@ -21,8 +21,7 @@ CREATE TABLE MyHBaseSource (
 ) WITH (
   'connector' = '$HBASE_CONNECTOR',
   'table-name' = 'source',
-  'zookeeper.quorum' = 'localhost:2181',
-  'zookeeper.znode.parent' = '/hbase'
+  'zookeeper.quorum' = 'hbase:2181'
 );
 
 CREATE TABLE MyHBaseSink (
@@ -32,13 +31,10 @@ CREATE TABLE MyHBaseSink (
 ) WITH (
   'connector' = '$HBASE_CONNECTOR',
   'table-name' = 'sink',
-  'zookeeper.quorum' = 'localhost:2181',
-  'zookeeper.znode.parent' = '/hbase',
+  'zookeeper.quorum' = 'hbase:2181',
   'sink.buffer-flush.max-rows' = '1',
   'sink.buffer-flush.interval' = '2s'
 );
-
-CREATE FUNCTION RegReplace AS 'org.apache.flink.table.toolbox.StringRegexReplaceFunction';
 
 INSERT INTO MyHBaseSink
 SELECT
@@ -48,9 +44,8 @@ SELECT
 FROM (
   SELECT
     rowkey,
-    RegReplace(family1.f1c1, 'v', 'value') as a,
+    REGEXP_REPLACE(family1.f1c1, 'v', 'value') as a,
     family2.f2c1 as b,
     family2.f2c2 as c
   FROM MyHBaseSource)
 source;
-
