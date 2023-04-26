@@ -53,7 +53,7 @@ under the License.
 	</scm>
 
 	<properties>
-		<flink.version>1.16.0</flink.version>
+		<flink.version>1.16.2</flink.version>
 		<flink.shaded.version>15.0</flink.shaded.version>
 
 		<scala.binary.version>2.12</scala.binary.version>
@@ -74,6 +74,7 @@ under the License.
 		<junit4.version>4.13.2</junit4.version>
 		<junit5.version>5.8.1</junit5.version>
 		<kryo.verison>2.24.0</kryo.verison>
+		<minikdc.version>3.2.4</minikdc.version>
 		<netty.version>4.1.70.Final</netty.version>
 		<zookeeper.version>3.4.14</zookeeper.version>
 
@@ -90,6 +91,7 @@ under the License.
 		<module>flink-connector-hbase-2.2</module>
 		<module>flink-sql-connector-hbase-1.4</module>
 		<module>flink-sql-connector-hbase-2.2</module>
+		<module>flink-connector-hbase-e2e-tests</module>
 	</modules>
 
 	<dependencies>
@@ -251,6 +253,14 @@ under the License.
 						<groupId>org.slf4j</groupId>
 						<artifactId>slf4j-log4j12</artifactId>
 					</exclusion>
+					<exclusion>
+						<groupId>ch.qos.reload4j</groupId>
+						<artifactId>reload4j</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>org.slf4j</groupId>
+						<artifactId>slf4j-reload4j</artifactId>
+					</exclusion>
 				</exclusions>
 			</dependency>
 
@@ -299,6 +309,14 @@ under the License.
 					<exclusion>
 						<groupId>org.slf4j</groupId>
 						<artifactId>slf4j-log4j12</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>ch.qos.reload4j</groupId>
+						<artifactId>reload4j</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>org.slf4j</groupId>
+						<artifactId>slf4j-reload4j</artifactId>
 					</exclusion>
 					<exclusion>
 						<groupId>com.google.guava</groupId>
