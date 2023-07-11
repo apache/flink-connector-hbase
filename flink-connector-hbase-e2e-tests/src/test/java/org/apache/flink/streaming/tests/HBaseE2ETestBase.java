@@ -23,12 +23,13 @@ import org.apache.flink.connector.testframe.container.TestcontainersSettings;
 import org.apache.flink.test.resources.ResourceTestUtils;
 import org.apache.flink.test.util.SQLJobSubmission;
 import org.apache.flink.util.FileUtils;
+import org.apache.flink.util.TestLoggerExtension;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.Network;
 
@@ -50,33 +51,43 @@ import static org.testcontainers.shaded.org.hamcrest.Matchers.containsInAnyOrder
 import static org.testcontainers.shaded.org.hamcrest.Matchers.containsString;
 
 /** End to end HBase connector tests. */
-class HBaseITCase {
+@ExtendWith(TestLoggerExtension.class)
+abstract class HBaseE2ETestBase {
 
     private static final String HBASE_E2E_SQL = "hbase_e2e.sql";
     private static final Path HADOOP_CP = ResourceTestUtils.getResource(".*hadoop.classpath");
-    private static final Network NETWORK = Network.newNetwork();
+
+    private final String hbaseVersion;
+    private final String connectorVersion;
+    private final Path connectorJar;
+    private final List<Path> hadoopCpJars;
+    private final Network network;
+
+    HBaseE2ETestBase(String hbaseVersion) throws IOException {
+        this.hbaseVersion = hbaseVersion;
+        connectorVersion = "hbase-" + hbaseVersion.substring(0, hbaseVersion.lastIndexOf('.'));
+        connectorJar = ResourceTestUtils.getResource("sql-" + connectorVersion + ".jar");
+        hadoopCpJars = collectHadoopCpJars();
+        network = Network.newNetwork();
+    }
 
     private HBaseContainer hbase;
     private FlinkContainers flink;
-    private List<Path> hadoopCpJars;
-    private Path connectorJar;
 
     @BeforeEach
     void start() throws Exception {
-        // Prepare all hadoop jars to mock HADOOP_CLASSPATH, use hadoop.classpath which contains all
-        // hadoop jars
-        File hadoopClasspathFile = new File(HADOOP_CP.toAbsolutePath().toString());
+        hbase = new HBaseContainer(hbaseVersion).withNetwork(network).withNetworkAliases("hbase");
+        flink =
+                FlinkContainers.builder()
+                        .withTestcontainersSettings(
+                                TestcontainersSettings.builder()
+                                        .network(network)
+                                        .dependsOn(hbase)
+                                        .build())
+                        .build();
 
-        if (!hadoopClasspathFile.exists()) {
-            throw new FileNotFoundException(
-                    "File that contains hadoop classpath " + HADOOP_CP + " does not exist.");
-        }
-
-        String classPathContent = FileUtils.readFileUtf8(hadoopClasspathFile);
-        hadoopCpJars =
-                Arrays.stream(classPathContent.split(":"))
-                        .map(Paths::get)
-                        .collect(Collectors.toList());
+        hbase.start();
+        flink.start();
     }
 
     @AfterEach
@@ -85,25 +96,8 @@ class HBaseITCase {
         hbase.stop();
     }
 
-    @ParameterizedTest
-    @CsvSource({"1.4.3,hbase-1.4", "2.2.3,hbase-2.2"})
-    void test(String hbaseVersion, String connectorVersion) throws Exception {
-        hbase = new HBaseContainer(hbaseVersion).withNetwork(NETWORK).withNetworkAliases("hbase");
-
-        flink =
-                FlinkContainers.builder()
-                        .withTestcontainersSettings(
-                                TestcontainersSettings.builder()
-                                        .network(NETWORK)
-                                        .dependsOn(hbase)
-                                        .build())
-                        .build();
-
-        connectorJar = ResourceTestUtils.getResource("sql-" + connectorVersion + ".jar");
-
-        hbase.start();
-        flink.start();
-
+    @Test
+    void test() throws Exception {
         hbase.createTable("source", "family1", "family2");
         hbase.createTable("sink", "family1", "family2");
 
@@ -114,7 +108,7 @@ class HBaseITCase {
         hbase.putData("source", "row2", "family2", "f2c1", "v5");
         hbase.putData("source", "row2", "family2", "f2c2", "v6");
 
-        SQLJobSubmission jobSubmission = initSqlJobSubmission(connectorVersion);
+        SQLJobSubmission jobSubmission = initSqlJobSubmission();
         flink.submitSQLJob(jobSubmission);
         List<String> valueLines = getSinkResult();
 
@@ -155,8 +149,24 @@ class HBaseITCase {
                                 containsString("v6"))));
     }
 
-    private SQLJobSubmission initSqlJobSubmission(String connectorVersion) throws IOException {
-        List<String> sqlLines = loadSqlStatements(connectorVersion);
+    private List<Path> collectHadoopCpJars() throws IOException {
+        // Prepare all hadoop jars to mock HADOOP_CLASSPATH, use hadoop.classpath which contains all
+        // hadoop jars
+        File hadoopClasspathFile = new File(HADOOP_CP.toAbsolutePath().toString());
+
+        if (!hadoopClasspathFile.exists()) {
+            throw new FileNotFoundException(
+                    "File that contains hadoop classpath " + HADOOP_CP + " does not exist.");
+        }
+
+        String classPathContent = FileUtils.readFileUtf8(hadoopClasspathFile);
+        return Arrays.stream(classPathContent.split(":"))
+                .map(Paths::get)
+                .collect(Collectors.toList());
+    }
+
+    private SQLJobSubmission initSqlJobSubmission() throws IOException {
+        List<String> sqlLines = loadSqlStatements();
         return new SQLJobSubmission.SQLJobSubmissionBuilder(sqlLines)
                 .addJar(connectorJar)
                 .addJars(hadoopCpJars)
@@ -172,9 +182,9 @@ class HBaseITCase {
                 .collect(Collectors.toList());
     }
 
-    private static List<String> loadSqlStatements(String connectorVersion) throws IOException {
+    private List<String> loadSqlStatements() throws IOException {
         try (InputStream is =
-                HBaseITCase.class.getClassLoader().getResourceAsStream(HBASE_E2E_SQL)) {
+                HBaseE2ETestBase.class.getClassLoader().getResourceAsStream(HBASE_E2E_SQL)) {
             if (is == null) {
                 throw new FileNotFoundException(HBASE_E2E_SQL);
             }
