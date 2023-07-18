@@ -486,7 +486,12 @@ under the License.
 				<artifactId>assertj-core</artifactId>
 				<version>${assertj.version}</version>
 			</dependency>
-			<!-- End of dependencies for dependency convergence -->
+
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-compress</artifactId>
+				<version>1.23.0</version>
+			</dependency>			<!-- End of dependencies for dependency convergence -->
 		</dependencies>
 	</dependencyManagement>
 
