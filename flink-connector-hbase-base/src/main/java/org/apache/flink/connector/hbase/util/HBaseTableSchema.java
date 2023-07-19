@@ -29,15 +29,13 @@ import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.table.types.utils.TypeConversions;
 import org.apache.flink.util.Preconditions;
 
-import org.apache.flink.shaded.guava30.com.google.common.collect.Streams;
-
 import java.io.Serializable;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 import static org.apache.flink.table.types.utils.TypeConversions.fromLogicalToDataType;
 
@@ -279,12 +277,11 @@ public class HBaseTableSchema implements Serializable {
                                     getQualifierNames(family), getQualifierDataTypes(family));
                 }
             }
-            return DataTypes.ROW(
-                    Streams.zip(
-                                    Arrays.stream(fieldNames),
-                                    Arrays.stream(fieldTypes),
-                                    DataTypes::FIELD)
-                            .toArray(DataTypes.Field[]::new));
+            DataTypes.Field[] fields =
+                    IntStream.range(0, fieldNames.length)
+                            .mapToObj(i -> DataTypes.FIELD(fieldNames[i], fieldTypes[i]))
+                            .toArray(DataTypes.Field[]::new);
+            return DataTypes.ROW(fields);
         } else {
             String[] fieldNames = new String[familyNames.length];
             DataType[] fieldTypes = new DataType[familyNames.length];
@@ -294,12 +291,11 @@ public class HBaseTableSchema implements Serializable {
                 fieldTypes[i] =
                         getRowDataType(getQualifierNames(family), getQualifierDataTypes(family));
             }
-            return DataTypes.ROW(
-                    Streams.zip(
-                                    Arrays.stream(fieldNames),
-                                    Arrays.stream(fieldTypes),
-                                    DataTypes::FIELD)
-                            .toArray(DataTypes.Field[]::new));
+            DataTypes.Field[] fields =
+                    IntStream.range(0, fieldNames.length)
+                            .mapToObj(i -> DataTypes.FIELD(fieldNames[i], fieldTypes[i]))
+                            .toArray(DataTypes.Field[]::new);
+            return DataTypes.ROW(fields);
         }
     }
 

@@ -25,12 +25,11 @@ import org.apache.flink.table.connector.source.lookup.LookupOptions;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.DataType;
 
-import org.apache.flink.shaded.guava30.com.google.common.collect.Lists;
-
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -52,30 +51,32 @@ public class HBaseRowDataAsyncLookupFunctionTest extends HBaseTestBase {
         HBaseRowDataAsyncLookupFunction lookupFunction = buildRowDataAsyncLookupFunction();
 
         lookupFunction.open(null);
-        final List<String> result = new ArrayList<>();
+        final List<String> result = Collections.synchronizedList(new ArrayList<>());
         int[] rowkeys = {1, 2, 1, 12, 3, 12, 4, 3};
         CountDownLatch latch = new CountDownLatch(rowkeys.length);
+
         for (int rowkey : rowkeys) {
             CompletableFuture<Collection<RowData>> future = new CompletableFuture<>();
             lookupFunction.eval(future, rowkey);
+
             future.whenComplete(
                     (rs, t) -> {
-                        synchronized (result) {
-                            if (rs.isEmpty()) {
-                                result.add(rowkey + ": null");
-                            } else {
-                                rs.forEach(row -> result.add(rowkey + ": " + row.toString()));
-                            }
+                        if (rs.isEmpty()) {
+                            result.add(rowkey + ": null");
+                        } else {
+                            rs.forEach(row -> result.add(rowkey + ": " + row.toString()));
                         }
                         latch.countDown();
                     });
         }
+
         // this verifies lookup calls are async
         assertTrue(result.size() < rowkeys.length);
         latch.await();
         lookupFunction.close();
-        List<String> sortResult =
-                Lists.newArrayList(result).stream().sorted().collect(Collectors.toList());
+
+        List<String> sortResult = result.stream().sorted().collect(Collectors.toList());
+
         List<String> expected = new ArrayList<>();
         expected.add("12: null");
         expected.add("12: null");
@@ -85,6 +86,7 @@ public class HBaseRowDataAsyncLookupFunctionTest extends HBaseTestBase {
         expected.add("3: +I(3,+I(30),+I(Hello-3,300),+I(3.03,false,Welt-3))");
         expected.add("3: +I(3,+I(30),+I(Hello-3,300),+I(3.03,false,Welt-3))");
         expected.add("4: +I(4,+I(40),+I(null,400),+I(4.04,true,Welt-4))");
+
         assertEquals(expected, sortResult);
     }
 

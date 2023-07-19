@@ -38,9 +38,8 @@ import org.apache.flink.test.util.MiniClusterWithClientResource;
 import org.apache.flink.test.util.TestBaseUtils;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
+import org.apache.flink.util.CloseableIterator;
 import org.apache.flink.util.CollectionUtil;
-
-import org.apache.flink.shaded.guava30.com.google.common.collect.Lists;
 
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -51,7 +50,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.apache.flink.table.api.Expressions.$;
 import static org.junit.Assert.assertEquals;
@@ -384,11 +382,13 @@ public class HBaseConnectorITCase extends HBaseTestBase {
 
         TableResult tableResult3 = batchEnv.executeSql(query);
 
-        List<String> result =
-                Lists.newArrayList(tableResult3.collect()).stream()
-                        .map(Row::toString)
-                        .sorted()
-                        .collect(Collectors.toList());
+        List<String> result = new ArrayList<>();
+        CloseableIterator<Row> iterator = tableResult3.collect();
+        while (iterator.hasNext()) {
+            result.add(iterator.next().toString());
+        }
+
+        result.sort(String::compareTo);
 
         assertEquals(expected, result);
     }
@@ -468,12 +468,14 @@ public class HBaseConnectorITCase extends HBaseTestBase {
                         + " FROM src JOIN "
                         + TEST_TABLE_1
                         + " FOR SYSTEM_TIME AS OF src.proc as h ON src.a = h.rowkey";
+
+        List<String> result = new ArrayList<>();
         Iterator<Row> collected = tEnv.executeSql(dimJoinQuery).collect();
-        List<String> result =
-                Lists.newArrayList(collected).stream()
-                        .map(Row::toString)
-                        .sorted()
-                        .collect(Collectors.toList());
+        while (collected.hasNext()) {
+            result.add(collected.next().toString());
+        }
+
+        result.sort(String::compareTo);
 
         List<String> expected = new ArrayList<>();
         expected.add(
