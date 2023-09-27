@@ -261,6 +261,18 @@ public class HBaseDynamicTableFactoryTest {
     }
 
     @Test
+    public void testSinkIgnoreNullValueOptions() {
+        Map<String, String> options = getAllOptions();
+        options.put("sink.ignore-null-value", "true");
+
+        ResolvedSchema schema = ResolvedSchema.of(Column.physical(ROWKEY, STRING()));
+
+        DynamicTableSink sink = createTableSink(schema, options);
+        HBaseWriteOptions actual = ((HBaseDynamicTableSink) sink).getWriteOptions();
+        assertThat(actual.isIgnoreNullValue()).isTrue();
+    }
+
+    @Test
     public void testParallelismOptions() {
         Map<String, String> options = getAllOptions();
         options.put("sink.parallelism", "2");

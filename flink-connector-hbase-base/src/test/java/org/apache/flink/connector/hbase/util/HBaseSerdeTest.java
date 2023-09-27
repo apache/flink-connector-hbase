@@ -19,11 +19,14 @@
 package org.apache.flink.connector.hbase.util;
 
 import org.apache.flink.table.api.DataTypes;
+import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
+import org.apache.flink.table.data.StringData;
 import org.apache.flink.table.types.DataType;
 
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.jupiter.api.Test;
@@ -58,7 +61,7 @@ class HBaseSerdeTest {
 
     @Test
     void convertToNewRowTest() {
-        HBaseSerde serde = createHBaseSerde();
+        HBaseSerde serde = createHBaseSerde(false);
         List<List<Cell>> cellsList = prepareCells();
         List<RowData> resultRowDatas = new ArrayList<>();
         List<String> resultRowDataStr = new ArrayList<>();
@@ -79,7 +82,7 @@ class HBaseSerdeTest {
 
     @Test
     void convertToReusedRowTest() {
-        HBaseSerde serde = createHBaseSerde();
+        HBaseSerde serde = createHBaseSerde(false);
         List<List<Cell>> cellsList = prepareCells();
         List<RowData> resultRowDatas = new ArrayList<>();
         List<String> resultRowDataStr = new ArrayList<>();
@@ -99,7 +102,32 @@ class HBaseSerdeTest {
                         "+I(2,+I(20),+I(Hello-2,200),+I(2.02,true,Welt-2))");
     }
 
-    private HBaseSerde createHBaseSerde() {
+    @Test
+    public void writeIgnoreNullValueTest() {
+        HBaseSerde serde = createHBaseSerde(false);
+        Put m1 = serde.createPutMutation(prepareRowData());
+        assert m1 != null;
+        assertThat(m1.getRow()).isNotEmpty();
+        assertThat(m1.get(FAMILY1.getBytes(), F1COL1.getBytes())).isNotEmpty();
+        assertThat(m1.get(FAMILY2.getBytes(), F2COL1.getBytes())).isNotEmpty();
+        assertThat(m1.get(FAMILY2.getBytes(), F2COL2.getBytes())).isNotEmpty();
+        assertThat(m1.get(FAMILY3.getBytes(), F3COL1.getBytes())).isNotEmpty();
+        assertThat(m1.get(FAMILY3.getBytes(), F3COL2.getBytes())).isNotEmpty();
+        assertThat(m1.get(FAMILY3.getBytes(), F3COL3.getBytes())).isNotEmpty();
+
+        HBaseSerde writeIgnoreNullValueSerde = createHBaseSerde(true);
+        Put m2 = writeIgnoreNullValueSerde.createPutMutation(prepareRowData());
+        assert m2 != null;
+        assertThat(m2.getRow()).isNotEmpty();
+        assertThat(m2.get(FAMILY1.getBytes(), F1COL1.getBytes())).isEmpty();
+        assertThat(m2.get(FAMILY2.getBytes(), F2COL1.getBytes())).isNotEmpty();
+        assertThat(m2.get(FAMILY2.getBytes(), F2COL2.getBytes())).isEmpty();
+        assertThat(m2.get(FAMILY3.getBytes(), F2COL1.getBytes())).isNotEmpty();
+        assertThat(m2.get(FAMILY3.getBytes(), F3COL2.getBytes())).isNotEmpty();
+        assertThat(m2.get(FAMILY3.getBytes(), F3COL3.getBytes())).isEmpty();
+    }
+
+    private HBaseTableSchema createHBaseTableSchema() {
         DataType dataType =
                 ROW(
                         FIELD(ROW_KEY, INT()),
@@ -111,8 +139,11 @@ class HBaseSerdeTest {
                                         FIELD(F3COL1, DOUBLE()),
                                         FIELD(F3COL2, DataTypes.BOOLEAN()),
                                         FIELD(F3COL3, STRING()))));
-        HBaseTableSchema hbaseSchema = HBaseTableSchema.fromDataType(dataType);
-        return new HBaseSerde(hbaseSchema, "null");
+        return HBaseTableSchema.fromDataType(dataType);
+    }
+
+    private HBaseSerde createHBaseSerde(boolean writeIgnoreNullValue) {
+        return new HBaseSerde(createHBaseTableSchema(), "null", writeIgnoreNullValue);
     }
 
     private List<List<Cell>> prepareCells() {
@@ -162,5 +193,26 @@ class HBaseSerdeTest {
         cellList.add(cells1);
         cellList.add(cells2);
         return cellList;
+    }
+
+    private RowData prepareRowData() {
+        GenericRowData fam1Row = new GenericRowData(1);
+        fam1Row.setField(0, null);
+
+        GenericRowData fam2Row = new GenericRowData(2);
+        fam2Row.setField(0, StringData.fromString("Hello-1"));
+        fam2Row.setField(1, null);
+
+        GenericRowData fam3Row = new GenericRowData(3);
+        fam3Row.setField(0, 2.02);
+        fam3Row.setField(1, true);
+        fam3Row.setField(2, null);
+
+        GenericRowData row = new GenericRowData(4);
+        row.setField(0, 10);
+        row.setField(1, fam1Row);
+        row.setField(2, fam2Row);
+        row.setField(3, fam3Row);
+        return row;
     }
 }

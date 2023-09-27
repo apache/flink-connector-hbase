@@ -88,6 +88,12 @@ public class HBaseConnectorOptions {
                                     + "Can be set to '0' to disable it. Note, both 'sink.buffer-flush.max-size' and 'sink.buffer-flush.max-rows' "
                                     + "can be set to '0' with the flush interval set allowing for complete async processing of buffered actions.");
 
+    public static final ConfigOption<Boolean> SINK_IGNORE_NULL_VALUE =
+            ConfigOptions.key("sink.ignore-null-value")
+                    .booleanType()
+                    .defaultValue(false)
+                    .withDescription("Writing option, whether ignore null value or not.");
+
     public static final ConfigOption<Boolean> LOOKUP_ASYNC =
             ConfigOptions.key("lookup.async")
                     .booleanType()
