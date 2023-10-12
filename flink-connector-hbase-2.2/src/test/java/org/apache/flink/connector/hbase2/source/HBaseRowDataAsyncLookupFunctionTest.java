@@ -25,16 +25,14 @@ import org.apache.flink.table.connector.source.lookup.LookupOptions;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.DataType;
 
-import org.apache.flink.shaded.guava30.com.google.common.collect.Lists;
-
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.stream.Collectors;
 
 import static org.apache.flink.table.api.DataTypes.BIGINT;
 import static org.apache.flink.table.api.DataTypes.DOUBLE;
@@ -74,8 +72,8 @@ public class HBaseRowDataAsyncLookupFunctionTest extends HBaseTestBase {
         assertTrue(result.size() < rowkeys.length);
         latch.await();
         lookupFunction.close();
-        List<String> sortResult =
-                Lists.newArrayList(result).stream().sorted().collect(Collectors.toList());
+        List<String> sortResult = new ArrayList<>(result);
+        Collections.sort(sortResult);
         List<String> expected = new ArrayList<>();
         expected.add("12: null");
         expected.add("12: null");
