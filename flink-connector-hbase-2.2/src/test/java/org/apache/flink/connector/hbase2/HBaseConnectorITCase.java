@@ -47,10 +47,9 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.apache.flink.table.api.Expressions.$;
 import static org.junit.Assert.assertEquals;
@@ -383,13 +382,12 @@ public class HBaseConnectorITCase extends HBaseTestBase {
 
         TableResult tableResult3 = batchEnv.executeSql(query);
 
-        List<String> result = new ArrayList<>();
-        for (CloseableIterator<Row> it = tableResult3.collect(); it.hasNext(); ) {
-            Row row = it.next();
-            result.add(row.toString());
-        }
-        Collections.sort(result);
-        result = new ArrayList<>(result);
+        List<String> result = StreamSupport.stream(
+                        Spliterators.spliteratorUnknownSize(tableResult3.collect(), Spliterator.ORDERED),
+                        false)
+                .map(Row::toString)
+                .sorted()
+                .collect(Collectors.toList());
 
         assertEquals(expected, result);
     }
@@ -470,13 +468,13 @@ public class HBaseConnectorITCase extends HBaseTestBase {
                         + TEST_TABLE_1
                         + " FOR SYSTEM_TIME AS OF src.proc as h ON src.a = h.rowkey";
         Iterator<Row> collected = tEnv.executeSql(dimJoinQuery).collect();
-        List<String> result = new ArrayList<>();
-        for (Iterator<Row> it = collected; it.hasNext(); ) {
-            Row row = it.next();
-            result.add(row.toString());
-        }
-        Collections.sort(result);
-        result = new ArrayList<>(result);
+        List<String> result =
+                StreamSupport.stream(
+                                Spliterators.spliteratorUnknownSize(collected, Spliterator.ORDERED),
+                                false)
+                        .map(Row::toString)
+                        .sorted()
+                        .collect(Collectors.toList());
 
         List<String> expected = new ArrayList<>();
         expected.add(
