@@ -40,8 +40,6 @@ import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
 import org.apache.flink.util.CollectionUtil;
 
-import org.apache.flink.shaded.guava30.com.google.common.collect.Lists;
-
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.ClassRule;
@@ -51,7 +49,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.apache.flink.table.api.Expressions.$;
 import static org.junit.Assert.assertEquals;
@@ -385,7 +386,10 @@ public class HBaseConnectorITCase extends HBaseTestBase {
         TableResult tableResult3 = batchEnv.executeSql(query);
 
         List<String> result =
-                Lists.newArrayList(tableResult3.collect()).stream()
+                StreamSupport.stream(
+                                Spliterators.spliteratorUnknownSize(
+                                        tableResult3.collect(), Spliterator.ORDERED),
+                                false)
                         .map(Row::toString)
                         .sorted()
                         .collect(Collectors.toList());
@@ -470,7 +474,9 @@ public class HBaseConnectorITCase extends HBaseTestBase {
                         + " FOR SYSTEM_TIME AS OF src.proc as h ON src.a = h.rowkey";
         Iterator<Row> collected = tEnv.executeSql(dimJoinQuery).collect();
         List<String> result =
-                Lists.newArrayList(collected).stream()
+                StreamSupport.stream(
+                                Spliterators.spliteratorUnknownSize(collected, Spliterator.ORDERED),
+                                false)
                         .map(Row::toString)
                         .sorted()
                         .collect(Collectors.toList());
