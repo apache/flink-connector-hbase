@@ -38,7 +38,6 @@ import org.apache.flink.test.util.MiniClusterWithClientResource;
 import org.apache.flink.test.util.TestBaseUtils;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
-import org.apache.flink.util.CloseableIterator;
 import org.apache.flink.util.CollectionUtil;
 
 import org.apache.hadoop.hbase.TableName;
@@ -382,12 +381,14 @@ public class HBaseConnectorITCase extends HBaseTestBase {
 
         TableResult tableResult3 = batchEnv.executeSql(query);
 
-        List<String> result = StreamSupport.stream(
-                        Spliterators.spliteratorUnknownSize(tableResult3.collect(), Spliterator.ORDERED),
-                        false)
-                .map(Row::toString)
-                .sorted()
-                .collect(Collectors.toList());
+        List<String> result =
+                StreamSupport.stream(
+                                Spliterators.spliteratorUnknownSize(
+                                        tableResult3.collect(), Spliterator.ORDERED),
+                                false)
+                        .map(Row::toString)
+                        .sorted()
+                        .collect(Collectors.toList());
 
         assertEquals(expected, result);
     }
