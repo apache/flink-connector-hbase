@@ -260,6 +260,10 @@ under the License.
 						<groupId>org.slf4j</groupId>
 						<artifactId>slf4j-reload4j</artifactId>
 					</exclusion>
+					<exclusion>
+						<groupId>net.minidev</groupId>
+						<artifactId>json-smart</artifactId>
+					</exclusion>
 				</exclusions>
 			</dependency>
 
@@ -349,6 +353,10 @@ under the License.
 						<groupId>org.javassist</groupId>
 						<artifactId>javassist</artifactId>
 					</exclusion>
+					<exclusion>
+						<groupId>net.minidev</groupId>
+						<artifactId>json-smart</artifactId>
+					</exclusion>
 				</exclusions>
 			</dependency>
 
@@ -401,6 +409,12 @@ under the License.
 				<groupId>commons-logging</groupId>
 				<artifactId>commons-logging</artifactId>
 				<version>${commons.logging.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-compress</artifactId>
+				<version>1.23.0</version>
 			</dependency>
 
 			<dependency>
