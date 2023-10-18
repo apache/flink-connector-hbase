@@ -35,11 +35,16 @@ import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.BufferedMutatorParams;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.RetriesExhaustedWithDetailsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -71,7 +76,7 @@ public class HBaseSinkFunction<T> extends RichSinkFunction<T>
     private final HBaseMutationConverter<T> mutationConverter;
 
     private transient Connection connection;
-    private transient BufferedMutator mutator;
+    private transient DeduplicatedMutator mutator;
 
     private transient ScheduledExecutorService executor;
     private transient ScheduledFuture scheduledFuture;
@@ -121,7 +126,9 @@ public class HBaseSinkFunction<T> extends RichSinkFunction<T>
             if (bufferFlushMaxSizeInBytes > 0) {
                 params.writeBufferSize(bufferFlushMaxSizeInBytes);
             }
-            this.mutator = connection.getBufferedMutator(params);
+            this.mutator =
+                    new DeduplicatedMutator(
+                            (int) bufferFlushMaxMutations, connection.getBufferedMutator(params));
 
             if (bufferFlushIntervalMillis > 0 && bufferFlushMaxMutations != 1) {
                 this.executor =
@@ -201,7 +208,7 @@ public class HBaseSinkFunction<T> extends RichSinkFunction<T>
     }
 
     private void flush() throws IOException {
-        // BufferedMutator is thread-safe
+        // DeduplicatedMutator is thread-safe
         mutator.flush();
         numPendingRequests.set(0);
         checkErrorAndRethrow();
@@ -255,5 +262,40 @@ public class HBaseSinkFunction<T> extends RichSinkFunction<T>
         // fail the sink and skip the rest of the items
         // if the failure handler decides to throw an exception
         failureThrowable.compareAndSet(null, exception);
+    }
+
+    /**
+     * Thread-safe class, grouped mutations by rows and keep the latest mutation. For more info, see
+     * <a href="https://issues.apache.org/jira/browse/HBASE-8626">HBASE-8626</a>.
+     */
+    private static class DeduplicatedMutator {
+
+        private final BufferedMutator mutator;
+        private final Map<ByteBuffer, Mutation> mutations;
+
+        DeduplicatedMutator(int size, BufferedMutator mutator) {
+            this.mutator = mutator;
+            this.mutations = new HashMap<>(size);
+        }
+
+        synchronized void mutate(Mutation current) {
+            ByteBuffer key = ByteBuffer.wrap(current.getRow());
+            Mutation old = mutations.get(key);
+            if (old == null || current.getTimeStamp() >= old.getTimeStamp()) {
+                mutations.put(key, current);
+            }
+        }
+
+        synchronized void flush() throws IOException {
+            mutator.mutate(new ArrayList<>(mutations.values()));
+            mutator.flush();
+            mutations.clear();
+        }
+
+        synchronized void close() throws IOException {
+            mutator.mutate(new ArrayList<>(mutations.values()));
+            mutator.close();
+            mutations.clear();
+        }
     }
 }
