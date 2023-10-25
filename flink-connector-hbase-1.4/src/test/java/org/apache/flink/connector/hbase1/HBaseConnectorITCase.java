@@ -117,6 +117,31 @@ public class HBaseConnectorITCase extends HBaseTestBase {
     }
 
     @Test
+    public void testTableSourceEmptyTableScan() {
+        TableEnvironment tEnv = TableEnvironment.create(batchSettings);
+
+        tEnv.executeSql(
+                "CREATE TABLE hTable ("
+                        + " family1 ROW<col1 INT>,"
+                        + " rowkey INT,"
+                        + " PRIMARY KEY (rowkey) NOT ENFORCED"
+                        + ") WITH ("
+                        + " 'connector' = 'hbase-1.4',"
+                        + " 'table-name' = '"
+                        + TEST_EMPTY_TABLE
+                        + "',"
+                        + " 'zookeeper.quorum' = '"
+                        + getZookeeperQuorum()
+                        + "'"
+                        + ")");
+
+        Table table = tEnv.sqlQuery("SELECT rowkey, h.family1.col1 FROM hTable AS h");
+        List<Row> results = CollectionUtil.iteratorToList(table.execute().collect());
+
+        assertThat(results).isEmpty();
+    }
+
+    @Test
     public void testTableSourceProjection() {
         TableEnvironment tEnv = TableEnvironment.create(batchSettings);
 
