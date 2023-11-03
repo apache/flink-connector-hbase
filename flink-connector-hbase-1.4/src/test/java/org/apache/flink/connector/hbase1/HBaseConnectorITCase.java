@@ -29,10 +29,13 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableEnvironment;
+import org.apache.flink.table.api.TableResult;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.functions.ScalarFunction;
+import org.apache.flink.table.planner.factories.TestValuesTableFactory;
 import org.apache.flink.test.util.TestBaseUtils;
 import org.apache.flink.types.Row;
+import org.apache.flink.types.RowKind;
 import org.apache.flink.util.CollectionUtil;
 
 import org.apache.hadoop.hbase.TableName;
@@ -41,11 +44,14 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.apache.flink.table.api.Expressions.$;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -278,6 +284,59 @@ public class HBaseConnectorITCase extends HBaseTestBase {
                         + "+I[8, 80, null, 800, 8.08, true, Welt-8]\n";
 
         TestBaseUtils.compareResultAsText(results, expected);
+    }
+
+    @Test
+    public void testTableSinkWithChangelog() throws Exception {
+        StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
+        StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
+
+        // register values table for source
+        String dataId =
+                TestValuesTableFactory.registerData(
+                        Arrays.asList(
+                                Row.ofKind(RowKind.INSERT, 1, Row.of("Hello1")),
+                                Row.ofKind(RowKind.DELETE, 1, Row.of("Hello2")),
+                                Row.ofKind(RowKind.INSERT, 2, Row.of("Hello1")),
+                                Row.ofKind(RowKind.INSERT, 2, Row.of("Hello2")),
+                                Row.ofKind(RowKind.INSERT, 2, Row.of("Hello3")),
+                                Row.ofKind(RowKind.DELETE, 2, Row.of("Hello3")),
+                                Row.ofKind(RowKind.INSERT, 1, Row.of("Hello3"))));
+        tEnv.executeSql(
+                "CREATE TABLE source_table ("
+                        + " rowkey INT,"
+                        + " family1 ROW<name STRING>,"
+                        + " PRIMARY KEY (rowkey) NOT ENFORCED"
+                        + ") WITH ("
+                        + " 'connector' = 'values',"
+                        + " 'data-id' = '"
+                        + dataId
+                        + "',"
+                        + " 'changelog-mode'='I,UA,UB,D'"
+                        + ")");
+
+        // register HBase table for sink
+        tEnv.executeSql(
+                "CREATE TABLE sink_table ("
+                        + " rowkey INT,"
+                        + " family1 ROW<name STRING>,"
+                        + " PRIMARY KEY (rowkey) NOT ENFORCED"
+                        + ") WITH ("
+                        + " 'connector' = 'hbase-1.4',"
+                        + " 'table-name' = '"
+                        + TEST_TABLE_4
+                        + "',"
+                        + " 'zookeeper.quorum' = '"
+                        + getZookeeperQuorum()
+                        + "'"
+                        + ")");
+
+        tEnv.executeSql("INSERT INTO sink_table SELECT * FROM source_table").await();
+
+        TableResult result = tEnv.executeSql("SELECT * FROM sink_table");
+
+        List<Row> actual = CollectionUtil.iteratorToList(result.collect());
+        assertThat(actual).isEqualTo(Collections.singletonList(Row.of(1, Row.of("Hello3"))));
     }
 
     @Test
