@@ -34,16 +34,19 @@ public class HBaseWriteOptions implements Serializable {
     private final long bufferFlushMaxSizeInBytes;
     private final long bufferFlushMaxRows;
     private final long bufferFlushIntervalMillis;
+    private final boolean ignoreNullValue;
     private final Integer parallelism;
 
     private HBaseWriteOptions(
             long bufferFlushMaxSizeInBytes,
             long bufferFlushMaxMutations,
             long bufferFlushIntervalMillis,
+            boolean ignoreNullValue,
             Integer parallelism) {
         this.bufferFlushMaxSizeInBytes = bufferFlushMaxSizeInBytes;
         this.bufferFlushMaxRows = bufferFlushMaxMutations;
         this.bufferFlushIntervalMillis = bufferFlushIntervalMillis;
+        this.ignoreNullValue = ignoreNullValue;
         this.parallelism = parallelism;
     }
 
@@ -59,6 +62,10 @@ public class HBaseWriteOptions implements Serializable {
         return bufferFlushIntervalMillis;
     }
 
+    public boolean isIgnoreNullValue() {
+        return ignoreNullValue;
+    }
+
     public Integer getParallelism() {
         return parallelism;
     }
@@ -72,6 +79,8 @@ public class HBaseWriteOptions implements Serializable {
                 + bufferFlushMaxRows
                 + ", bufferFlushIntervalMillis="
                 + bufferFlushIntervalMillis
+                + ", ignoreNullValue="
+                + ignoreNullValue
                 + ", parallelism="
                 + parallelism
                 + '}';
@@ -89,6 +98,7 @@ public class HBaseWriteOptions implements Serializable {
         return bufferFlushMaxSizeInBytes == that.bufferFlushMaxSizeInBytes
                 && bufferFlushMaxRows == that.bufferFlushMaxRows
                 && bufferFlushIntervalMillis == that.bufferFlushIntervalMillis
+                && ignoreNullValue == that.ignoreNullValue
                 && parallelism == that.parallelism;
     }
 
@@ -112,6 +122,7 @@ public class HBaseWriteOptions implements Serializable {
         private long bufferFlushMaxSizeInBytes = ConnectionConfiguration.WRITE_BUFFER_SIZE_DEFAULT;
         private long bufferFlushMaxRows = 0;
         private long bufferFlushIntervalMillis = 0;
+        private boolean ignoreNullValue;
         private Integer parallelism;
 
         /**
@@ -142,6 +153,14 @@ public class HBaseWriteOptions implements Serializable {
         }
 
         /**
+         * Optional. Sets whether ignore null value or not. By defaults, null value will be writing.
+         */
+        public Builder setIgnoreNullValue(boolean ignoreNullValue) {
+            this.ignoreNullValue = ignoreNullValue;
+            return this;
+        }
+
+        /**
          * Optional. Defines the parallelism of the HBase sink operator. By default, the parallelism
          * is determined by the framework using the same parallelism of the upstream chained
          * operator.
@@ -157,6 +176,7 @@ public class HBaseWriteOptions implements Serializable {
                     bufferFlushMaxSizeInBytes,
                     bufferFlushMaxRows,
                     bufferFlushIntervalMillis,
+                    ignoreNullValue,
                     parallelism);
         }
     }
