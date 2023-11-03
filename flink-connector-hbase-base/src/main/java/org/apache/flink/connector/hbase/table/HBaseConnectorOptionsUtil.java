@@ -34,6 +34,7 @@ import java.util.Properties;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_INTERVAL;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_MAX_ROWS;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_MAX_SIZE;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_IGNORE_NULL_VALUE;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_PARALLELISM;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.ZOOKEEPER_QUORUM;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.ZOOKEEPER_ZNODE_PARENT;
@@ -89,6 +90,7 @@ public class HBaseConnectorOptionsUtil {
         builder.setBufferFlushMaxRows(tableOptions.get(SINK_BUFFER_FLUSH_MAX_ROWS));
         builder.setBufferFlushMaxSizeInBytes(
                 tableOptions.get(SINK_BUFFER_FLUSH_MAX_SIZE).getBytes());
+        builder.setIgnoreNullValue(tableOptions.get(SINK_IGNORE_NULL_VALUE));
         builder.setParallelism(tableOptions.getOptional(SINK_PARALLELISM).orElse(null));
         return builder.build();
     }

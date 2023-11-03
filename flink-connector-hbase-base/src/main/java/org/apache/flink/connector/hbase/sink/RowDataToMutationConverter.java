@@ -34,16 +34,19 @@ public class RowDataToMutationConverter implements HBaseMutationConverter<RowDat
 
     private final HBaseTableSchema schema;
     private final String nullStringLiteral;
+    private final boolean ignoreNullValue;
     private transient HBaseSerde serde;
 
-    public RowDataToMutationConverter(HBaseTableSchema schema, final String nullStringLiteral) {
+    public RowDataToMutationConverter(
+            HBaseTableSchema schema, final String nullStringLiteral, boolean ignoreNullValue) {
         this.schema = schema;
         this.nullStringLiteral = nullStringLiteral;
+        this.ignoreNullValue = ignoreNullValue;
     }
 
     @Override
     public void open() {
-        this.serde = new HBaseSerde(schema, nullStringLiteral);
+        this.serde = new HBaseSerde(schema, nullStringLiteral, ignoreNullValue);
     }
 
     @Override
