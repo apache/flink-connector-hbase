@@ -172,6 +172,14 @@ Connector Options
       </td>
     </tr>
     <tr>
+      <td><h5>sink.ignore-null-value</h5></td>
+      <td>optional</td>
+      <td>yes</td>
+      <td style="word-wrap: break-word;">false</td>
+      <td>Boolean</td>
+      <td>Writing option, whether ignore null value or not.</td>
+    </tr>
+    <tr>
       <td><h5>sink.parallelism</h5></td>
       <td>optional</td>
       <td>no</td>
