@@ -85,16 +85,14 @@ public class HBaseRowDataInputFormat extends AbstractTableInputFormat<RowData> {
     }
 
     private void connectToTable() throws IOException {
-        try {
-            if (connection == null) {
-                connection = ConnectionFactory.createConnection(getHadoopConfiguration());
-            }
-            TableName name = TableName.valueOf(getTableName());
-            table = connection.getTable(name);
-            regionLocator = connection.getRegionLocator(name);
-        } catch (TableNotFoundException tnfe) {
-            LOG.error("The table " + tableName + " not found ", tnfe);
-            throw new RuntimeException("HBase table '" + tableName + "' not found.", tnfe);
+        if (connection == null) {
+            connection = ConnectionFactory.createConnection(getHadoopConfiguration());
         }
+        TableName name = TableName.valueOf(tableName);
+        if (!connection.getAdmin().tableExists(name)) {
+            throw new TableNotFoundException("HBase table '" + tableName + "' not found.");
+        }
+        table = connection.getTable(name);
+        regionLocator = connection.getRegionLocator(name);
     }
 }
