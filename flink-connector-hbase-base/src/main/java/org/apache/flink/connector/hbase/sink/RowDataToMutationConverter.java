@@ -18,12 +18,16 @@
 
 package org.apache.flink.connector.hbase.sink;
 
+import org.apache.flink.connector.hbase.sink.WritableMetadata.TimestampMetadata;
 import org.apache.flink.connector.hbase.util.HBaseSerde;
 import org.apache.flink.connector.hbase.util.HBaseTableSchema;
 import org.apache.flink.table.data.RowData;
+import org.apache.flink.table.types.DataType;
 import org.apache.flink.types.RowKind;
 
 import org.apache.hadoop.hbase.client.Mutation;
+
+import java.util.List;
 
 /**
  * An implementation of {@link HBaseMutationConverter} which converts {@link RowData} into {@link
@@ -35,13 +39,19 @@ public class RowDataToMutationConverter implements HBaseMutationConverter<RowDat
     private final HBaseTableSchema schema;
     private final String nullStringLiteral;
     private final boolean ignoreNullValue;
+    private final TimestampMetadata timestampMetadata;
     private transient HBaseSerde serde;
 
     public RowDataToMutationConverter(
-            HBaseTableSchema schema, final String nullStringLiteral, boolean ignoreNullValue) {
+            HBaseTableSchema schema,
+            DataType physicalDataType,
+            List<String> metadataKeys,
+            String nullStringLiteral,
+            boolean ignoreNullValue) {
         this.schema = schema;
         this.nullStringLiteral = nullStringLiteral;
         this.ignoreNullValue = ignoreNullValue;
+        this.timestampMetadata = TimestampMetadata.of(metadataKeys, physicalDataType);
     }
 
     @Override
@@ -51,11 +61,12 @@ public class RowDataToMutationConverter implements HBaseMutationConverter<RowDat
 
     @Override
     public Mutation convertToMutation(RowData record) {
+        Long timestamp = timestampMetadata.read(record);
         RowKind kind = record.getRowKind();
         if (kind == RowKind.INSERT || kind == RowKind.UPDATE_AFTER) {
-            return serde.createPutMutation(record);
+            return serde.createPutMutation(record, timestamp);
         } else {
-            return serde.createDeleteMutation(record);
+            return serde.createDeleteMutation(record, timestamp);
         }
     }
 }

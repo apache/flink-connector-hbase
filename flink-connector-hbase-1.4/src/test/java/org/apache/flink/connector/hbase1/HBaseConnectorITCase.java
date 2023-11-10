@@ -373,6 +373,56 @@ public class HBaseConnectorITCase extends HBaseTestBase {
     }
 
     @Test
+    public void testTableSinkWithTimestampMetadata() throws Exception {
+        StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
+        StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
+
+        tEnv.executeSql(
+                "CREATE TABLE hTableForSink ("
+                        + " rowkey INT PRIMARY KEY NOT ENFORCED,"
+                        + " family1 ROW<col1 INT>,"
+                        + " version TIMESTAMP_LTZ(3) METADATA FROM 'timestamp'"
+                        + ") WITH ("
+                        + " 'connector' = 'hbase-1.4',"
+                        + " 'table-name' = '"
+                        + TEST_TABLE_5
+                        + "',"
+                        + " 'zookeeper.quorum' = '"
+                        + getZookeeperQuorum()
+                        + "'"
+                        + ")");
+
+        String insert =
+                "INSERT INTO hTableForSink VALUES"
+                        + "(1, ROW(1), TO_TIMESTAMP_LTZ(1696767943270, 3)),"
+                        + "(2, ROW(2), TO_TIMESTAMP_LTZ(1696767943270, 3)),"
+                        + "(3, ROW(3), TO_TIMESTAMP_LTZ(1696767943270, 3)),"
+                        + "(1, ROW(10), TO_TIMESTAMP_LTZ(1696767943269, 3)),"
+                        + "(2, ROW(20), TO_TIMESTAMP_LTZ(1696767943271, 3))";
+        tEnv.executeSql(insert).await();
+
+        tEnv.executeSql(
+                "CREATE TABLE hTableForQuery ("
+                        + " rowkey INT PRIMARY KEY NOT ENFORCED,"
+                        + " family1 ROW<col1 INT>"
+                        + ") WITH ("
+                        + " 'connector' = 'hbase-1.4',"
+                        + " 'table-name' = '"
+                        + TEST_TABLE_5
+                        + "',"
+                        + " 'zookeeper.quorum' = '"
+                        + getZookeeperQuorum()
+                        + "'"
+                        + ")");
+        TableResult result = tEnv.executeSql("SELECT rowkey, family1.col1 FROM hTableForQuery");
+        List<Row> results = CollectionUtil.iteratorToList(result.collect());
+
+        String expected = "+I[1, 1]\n+I[2, 20]\n+I[3, 3]\n";
+
+        TestBaseUtils.compareResultAsText(results, expected);
+    }
+
+    @Test
     public void testTableSourceSinkWithDDL() throws Exception {
         StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
@@ -554,7 +604,12 @@ public class HBaseConnectorITCase extends HBaseTestBase {
                 new HBaseSinkFunction<>(
                         TEST_NOT_EXISTS_TABLE,
                         hbaseConf,
-                        new RowDataToMutationConverter(tableSchema, "null", false),
+                        new RowDataToMutationConverter(
+                                tableSchema,
+                                tableSchema.convertToDataType(),
+                                Collections.emptyList(),
+                                "null",
+                                false),
                         2 * 1024 * 1024,
                         1000,
                         1000);

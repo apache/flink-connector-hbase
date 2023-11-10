@@ -77,6 +77,33 @@ LEFT JOIN hTable FOR SYSTEM_TIME AS OF myTopic.proctime
 ON myTopic.key = hTable.rowkey;
 ```
 
+Available Metadata
+------------------
+
+The following connector metadata can be accessed as metadata columns in a table definition.
+
+The `R/W` column defines whether a metadata field is readable (`R`) and/or writable (`W`).
+Read-only columns must be declared `VIRTUAL` to exclude them during an `INSERT INTO` operation.
+
+<table class="table table-bordered">
+    <thead>
+    <tr>
+      <th class="text-left" style="width: 25%">Key</th>
+      <th class="text-center" style="width: 30%">Data Type</th>
+      <th class="text-center" style="width: 40%">Description</th>
+      <th class="text-center" style="width: 5%">R/W</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td><code>timestamp</code></td>
+      <td><code>TIMESTAMP_LTZ(3) NOT NULL</code></td>
+      <td>Timestamp for the HBase mutation.</td>
+      <td><code>W</code></td>
+    </tr>
+    </tbody>
+</table>
+
 Connector Options
 ----------------
 
