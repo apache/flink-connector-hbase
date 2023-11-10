@@ -44,6 +44,7 @@ public abstract class HBaseTestBase extends HBaseTestingClusterAutoStarter {
     protected static final String TEST_TABLE_2 = "testTable2";
     protected static final String TEST_TABLE_3 = "testTable3";
     protected static final String TEST_TABLE_4 = "testTable4";
+    protected static final String TEST_NOT_EXISTS_TABLE = "notExistsTable";
 
     protected static final String ROW_KEY = "rowkey";
 
