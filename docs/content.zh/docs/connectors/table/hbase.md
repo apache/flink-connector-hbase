@@ -154,6 +154,13 @@ ON myTopic.key = hTable.rowkey;
       </td>
     </tr>
     <tr>
+      <td><h5>sink.ignore-null-value</h5></td>
+      <td>可选</td>
+      <td style="word-wrap: break-word;">false</td>
+      <td>Boolean</td>
+      <td>写入的参数选项。控制写入时是否需要忽略空值。</td>
+    </tr>
+    <tr>
       <td><h5>sink.parallelism</h5></td>
       <td>可选</td>
       <td style="word-wrap: break-word;">(none)</td>
