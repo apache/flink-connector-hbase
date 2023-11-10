@@ -120,9 +120,14 @@ public class HBaseSinkFunction<T> extends RichSinkFunction<T>
             if (null == connection) {
                 this.connection = ConnectionFactory.createConnection(config);
             }
+
+            TableName tableName = TableName.valueOf(hTableName);
+            if (!connection.getAdmin().tableExists(tableName)) {
+                throw new TableNotFoundException(tableName);
+            }
+
             // create a parameter instance, set the table name and custom listener reference.
-            BufferedMutatorParams params =
-                    new BufferedMutatorParams(TableName.valueOf(hTableName)).listener(this);
+            BufferedMutatorParams params = new BufferedMutatorParams(tableName).listener(this);
             if (bufferFlushMaxSizeInBytes > 0) {
                 params.writeBufferSize(bufferFlushMaxSizeInBytes);
             }

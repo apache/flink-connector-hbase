@@ -22,6 +22,9 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.connector.hbase.sink.HBaseSinkFunction;
+import org.apache.flink.connector.hbase.sink.RowDataToMutationConverter;
+import org.apache.flink.connector.hbase.util.HBaseConfigurationUtil;
 import org.apache.flink.connector.hbase.util.HBaseTableSchema;
 import org.apache.flink.connector.hbase2.source.AbstractTableInputFormat;
 import org.apache.flink.connector.hbase2.source.HBaseRowDataInputFormat;
@@ -33,6 +36,7 @@ import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableEnvironment;
 import org.apache.flink.table.api.TableResult;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.functions.ScalarFunction;
 import org.apache.flink.table.planner.factories.TestValuesTableFactory;
 import org.apache.flink.test.util.MiniClusterWithClientResource;
@@ -41,7 +45,9 @@ import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
 import org.apache.flink.util.CollectionUtil;
 
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -59,6 +65,7 @@ import java.util.stream.StreamSupport;
 
 import static org.apache.flink.table.api.Expressions.$;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -476,6 +483,46 @@ public class HBaseConnectorITCase extends HBaseTestBase {
 
         inputFormat.close();
         assertNull(inputFormat.getConnection());
+    }
+
+    @Test
+    public void testTableInputFormatTableExistence() throws IOException {
+        HBaseTableSchema tableSchema = new HBaseTableSchema();
+        tableSchema.addColumn(FAMILY1, F1COL1, byte[].class);
+        AbstractTableInputFormat<?> inputFormat =
+                new HBaseRowDataInputFormat(getConf(), TEST_NOT_EXISTS_TABLE, tableSchema, "null");
+
+        assertThatThrownBy(() -> inputFormat.createInputSplits(1))
+                .isExactlyInstanceOf(TableNotFoundException.class);
+
+        inputFormat.close();
+        assertNull(inputFormat.getConnection());
+    }
+
+    @Test
+    public void testHBaseSinkFunctionTableExistence() throws Exception {
+        org.apache.hadoop.conf.Configuration hbaseConf =
+                HBaseConfigurationUtil.getHBaseConfiguration();
+        hbaseConf.set(HConstants.ZOOKEEPER_QUORUM, getZookeeperQuorum());
+        hbaseConf.set(HConstants.ZOOKEEPER_ZNODE_PARENT, "/hbase");
+
+        HBaseTableSchema tableSchema = new HBaseTableSchema();
+        tableSchema.addColumn(FAMILY1, F1COL1, byte[].class);
+
+        HBaseSinkFunction<RowData> sinkFunction =
+                new HBaseSinkFunction<>(
+                        TEST_NOT_EXISTS_TABLE,
+                        hbaseConf,
+                        new RowDataToMutationConverter(tableSchema, "null", false),
+                        2 * 1024 * 1024,
+                        1000,
+                        1000);
+
+        assertThatThrownBy(() -> sinkFunction.open(new Configuration()))
+                .getRootCause()
+                .isExactlyInstanceOf(TableNotFoundException.class);
+
+        sinkFunction.close();
     }
 
     private void verifyHBaseLookupJoin(boolean async) {
