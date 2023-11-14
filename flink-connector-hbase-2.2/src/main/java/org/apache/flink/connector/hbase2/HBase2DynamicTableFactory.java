@@ -124,11 +124,13 @@ public class HBase2DynamicTableFactory
         Configuration hbaseConf = getHBaseConfiguration(tableOptions);
         HBaseWriteOptions hBaseWriteOptions = getHBaseWriteOptions(tableOptions);
         String nullStringLiteral = tableOptions.get(NULL_STRING_LITERAL);
-        HBaseTableSchema hbaseSchema =
-                HBaseTableSchema.fromDataType(context.getPhysicalRowDataType());
 
         return new HBaseDynamicTableSink(
-                tableName, hbaseSchema, hbaseConf, hBaseWriteOptions, nullStringLiteral);
+                tableName,
+                context.getPhysicalRowDataType(),
+                hbaseConf,
+                hBaseWriteOptions,
+                nullStringLiteral);
     }
 
     @Override

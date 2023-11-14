@@ -75,6 +75,33 @@ LEFT JOIN hTable FOR SYSTEM_TIME AS OF myTopic.proctime
 ON myTopic.key = hTable.rowkey;
 ```
 
+可用的元数据
+------------------
+
+以下的连接器元数据可以在表定义中通过元数据列的形式获取。
+
+`R/W` 列定义了一个元数据是可读的（`R`）还是可写的（`W`）。
+只读列必须声明为 `VIRTUAL` 以在 `INSERT INTO` 操作中排除它们。
+
+<table class="table table-bordered">
+    <thead>
+    <tr>
+      <th class="text-left" style="width: 25%">Key</th>
+      <th class="text-center" style="width: 30%">Data Type</th>
+      <th class="text-center" style="width: 40%">Description</th>
+      <th class="text-center" style="width: 5%">R/W</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td><code>timestamp</code></td>
+      <td><code>TIMESTAMP_LTZ(3) NOT NULL</code></td>
+      <td>HBase记录的时间戳。</td>
+      <td><code>W</code></td>
+    </tr>
+    </tbody>
+</table>
+
 连接器参数
 ----------------
 

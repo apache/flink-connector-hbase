@@ -44,6 +44,7 @@ public abstract class HBaseTestBase extends HBaseTestingClusterAutoStarter {
     protected static final String TEST_TABLE_2 = "testTable2";
     protected static final String TEST_TABLE_3 = "testTable3";
     protected static final String TEST_TABLE_4 = "testTable4";
+    protected static final String TEST_TABLE_5 = "testTable5";
     protected static final String TEST_EMPTY_TABLE = "testEmptyTable";
     protected static final String TEST_NOT_EXISTS_TABLE = "notExistsTable";
 
@@ -96,6 +97,7 @@ public abstract class HBaseTestBase extends HBaseTestingClusterAutoStarter {
         createHBaseTable2();
         createHBaseTable3();
         createHBaseTable4();
+        createHBaseTable5();
         createEmptyHBaseTable();
     }
 
@@ -241,6 +243,13 @@ public abstract class HBaseTestBase extends HBaseTestingClusterAutoStarter {
         // create a table
         byte[][] families = new byte[][] {Bytes.toBytes(FAMILY1)};
         TableName tableName = TableName.valueOf(TEST_TABLE_4);
+        createTable(tableName, families, SPLIT_KEYS);
+    }
+
+    private static void createHBaseTable5() {
+        // create a table
+        byte[][] families = new byte[][] {Bytes.toBytes(FAMILY1)};
+        TableName tableName = TableName.valueOf(TEST_TABLE_5);
         createTable(tableName, families, SPLIT_KEYS);
     }
 
