@@ -135,7 +135,7 @@ public class HBaseSerde {
      *
      * @return The appropriate instance of Put for this use case.
      */
-    public @Nullable Put createPutMutation(RowData row) {
+    public @Nullable Put createPutMutation(RowData row, long timestamp) {
         checkArgument(keyEncoder != null, "row key is not set.");
         byte[] rowkey = keyEncoder.encode(row, rowkeyIndex);
         if (rowkey.length == 0) {
@@ -143,7 +143,7 @@ public class HBaseSerde {
             return null;
         }
         // upsert
-        Put put = new Put(rowkey);
+        Put put = new Put(rowkey, timestamp);
         for (int i = 0; i < fieldLength; i++) {
             if (i != rowkeyIndex) {
                 int f = i > rowkeyIndex ? i - 1 : i;
@@ -172,7 +172,7 @@ public class HBaseSerde {
      *
      * @return The appropriate instance of Delete for this use case.
      */
-    public @Nullable Delete createDeleteMutation(RowData row) {
+    public @Nullable Delete createDeleteMutation(RowData row, long timestamp) {
         checkArgument(keyEncoder != null, "row key is not set.");
         byte[] rowkey = keyEncoder.encode(row, rowkeyIndex);
         if (rowkey.length == 0) {
@@ -180,7 +180,7 @@ public class HBaseSerde {
             return null;
         }
         // delete
-        Delete delete = new Delete(rowkey);
+        Delete delete = new Delete(rowkey, timestamp);
         for (int i = 0; i < fieldLength; i++) {
             if (i != rowkeyIndex) {
                 int f = i > rowkeyIndex ? i - 1 : i;

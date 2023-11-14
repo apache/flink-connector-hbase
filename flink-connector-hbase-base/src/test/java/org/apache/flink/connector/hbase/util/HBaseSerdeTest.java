@@ -25,6 +25,7 @@ import org.apache.flink.table.data.StringData;
 import org.apache.flink.table.types.DataType;
 
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
@@ -105,7 +106,7 @@ class HBaseSerdeTest {
     @Test
     public void writeIgnoreNullValueTest() {
         HBaseSerde serde = createHBaseSerde(false);
-        Put m1 = serde.createPutMutation(prepareRowData());
+        Put m1 = serde.createPutMutation(prepareRowData(), HConstants.LATEST_TIMESTAMP);
         assert m1 != null;
         assertThat(m1.getRow()).isNotEmpty();
         assertThat(m1.get(FAMILY1.getBytes(), F1COL1.getBytes())).isNotEmpty();
@@ -116,7 +117,9 @@ class HBaseSerdeTest {
         assertThat(m1.get(FAMILY3.getBytes(), F3COL3.getBytes())).isNotEmpty();
 
         HBaseSerde writeIgnoreNullValueSerde = createHBaseSerde(true);
-        Put m2 = writeIgnoreNullValueSerde.createPutMutation(prepareRowData());
+        Put m2 =
+                writeIgnoreNullValueSerde.createPutMutation(
+                        prepareRowData(), HConstants.LATEST_TIMESTAMP);
         assert m2 != null;
         assertThat(m2.getRow()).isNotEmpty();
         assertThat(m2.get(FAMILY1.getBytes(), F1COL1.getBytes())).isEmpty();
