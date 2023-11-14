@@ -24,8 +24,8 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -82,12 +82,12 @@ public abstract class HBaseTestBase extends HBaseTestingClusterAutoStarter {
     protected EnvironmentSettings streamSettings;
     protected EnvironmentSettings batchSettings;
 
-    @BeforeClass
+    @BeforeAll
     public static void activateHBaseCluster() throws IOException {
         prepareTables();
     }
 
-    @Before
+    @BeforeEach
     public void before() {
         this.streamSettings = EnvironmentSettings.inStreamingMode();
         this.batchSettings = EnvironmentSettings.inBatchMode();
