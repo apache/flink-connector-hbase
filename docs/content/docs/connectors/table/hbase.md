@@ -101,6 +101,12 @@ Read-only columns must be declared `VIRTUAL` to exclude them during an `INSERT I
       <td>Timestamp for the HBase mutation.</td>
       <td><code>W</code></td>
     </tr>
+    <tr>
+      <td><code>ttl</code></td>
+      <td><code>BIGINT NOT NULL</code></td>
+      <td>Time-to-live for the HBase mutation, in milliseconds.</td>
+      <td><code>W</code></td>
+    </tr>
     </tbody>
 </table>
 

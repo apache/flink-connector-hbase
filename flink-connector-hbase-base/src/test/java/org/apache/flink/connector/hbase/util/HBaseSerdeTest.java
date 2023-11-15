@@ -106,7 +106,7 @@ class HBaseSerdeTest {
     @Test
     public void writeIgnoreNullValueTest() {
         HBaseSerde serde = createHBaseSerde(false);
-        Put m1 = serde.createPutMutation(prepareRowData(), HConstants.LATEST_TIMESTAMP);
+        Put m1 = serde.createPutMutation(prepareRowData(), HConstants.LATEST_TIMESTAMP, null);
         assert m1 != null;
         assertThat(m1.getRow()).isNotEmpty();
         assertThat(m1.get(FAMILY1.getBytes(), F1COL1.getBytes())).isNotEmpty();
@@ -119,7 +119,7 @@ class HBaseSerdeTest {
         HBaseSerde writeIgnoreNullValueSerde = createHBaseSerde(true);
         Put m2 =
                 writeIgnoreNullValueSerde.createPutMutation(
-                        prepareRowData(), HConstants.LATEST_TIMESTAMP);
+                        prepareRowData(), HConstants.LATEST_TIMESTAMP, null);
         assert m2 != null;
         assertThat(m2.getRow()).isNotEmpty();
         assertThat(m2.get(FAMILY1.getBytes(), F1COL1.getBytes())).isEmpty();
