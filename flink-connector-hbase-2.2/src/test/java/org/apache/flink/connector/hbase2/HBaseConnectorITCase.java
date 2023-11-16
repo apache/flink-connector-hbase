@@ -29,7 +29,6 @@ import org.apache.flink.connector.hbase.util.HBaseTableSchema;
 import org.apache.flink.connector.hbase2.source.AbstractTableInputFormat;
 import org.apache.flink.connector.hbase2.source.HBaseRowDataInputFormat;
 import org.apache.flink.connector.hbase2.util.HBaseTestBase;
-import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
@@ -39,7 +38,6 @@ import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.functions.ScalarFunction;
 import org.apache.flink.table.planner.factories.TestValuesTableFactory;
-import org.apache.flink.test.junit5.MiniClusterExtension;
 import org.apache.flink.test.util.TestBaseUtils;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
@@ -50,7 +48,6 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -70,13 +67,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** IT cases for HBase connector (including source and sink). */
 class HBaseConnectorITCase extends HBaseTestBase {
-
-    @RegisterExtension
-    private static final MiniClusterExtension MINI_CLUSTER_EXTENSION =
-            new MiniClusterExtension(
-                    new MiniClusterResourceConfiguration.Builder()
-                            .setConfiguration(new Configuration())
-                            .build());
 
     // -------------------------------------------------------------------------------------
     // HBaseTableSource tests
