@@ -60,6 +60,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -449,6 +450,74 @@ public class HBaseConnectorITCase extends HBaseTestBase {
         String expected = "+I[1, 1]\n+I[2, 20]\n+I[3, 3]\n";
 
         TestBaseUtils.compareResultAsText(results, expected);
+    }
+
+    @Test
+    public void testTableSinkWithTTLMetadata() throws Exception {
+        StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
+        StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
+
+        tEnv.executeSql(
+                "CREATE TABLE hTableForSink ("
+                        + " rowkey INT PRIMARY KEY NOT ENFORCED,"
+                        + " family1 ROW<col1 INT>,"
+                        + " ttl BIGINT NOT NULL METADATA FROM 'ttl'"
+                        + ") WITH ("
+                        + " 'connector' = 'hbase-2.2',"
+                        + " 'table-name' = '"
+                        + TEST_TABLE_6
+                        + "',"
+                        + " 'zookeeper.quorum' = '"
+                        + getZookeeperQuorum()
+                        + "'"
+                        + ")");
+
+        String insert =
+                "INSERT INTO hTableForSink VALUES"
+                        + "(1, ROW(1), 2000),"
+                        + "(2, ROW(2), 9000),"
+                        + "(3, ROW(3), 5000)";
+        tEnv.executeSql(insert).await();
+
+        tEnv.executeSql(
+                "CREATE TABLE hTableForQuery ("
+                        + " rowkey INT PRIMARY KEY NOT ENFORCED,"
+                        + " family1 ROW<col1 INT>"
+                        + ") WITH ("
+                        + " 'connector' = 'hbase-2.2',"
+                        + " 'table-name' = '"
+                        + TEST_TABLE_6
+                        + "',"
+                        + " 'zookeeper.quorum' = '"
+                        + getZookeeperQuorum()
+                        + "'"
+                        + ")");
+        String query = "SELECT rowkey, family1.col1 FROM hTableForQuery";
+
+        TableResult firstResult = tEnv.executeSql(query);
+        List<Row> firstResults = CollectionUtil.iteratorToList(firstResult.collect());
+        String firstExpected = "+I[1, 1]\n+I[2, 2]\n+I[3, 3]\n";
+        TestBaseUtils.compareResultAsText(firstResults, firstExpected);
+
+        TimeUnit.SECONDS.sleep(3);
+
+        TableResult secondResult = tEnv.executeSql(query);
+        List<Row> secondResults = CollectionUtil.iteratorToList(secondResult.collect());
+        String secondExpected = "+I[2, 2]\n+I[3, 3]\n";
+        TestBaseUtils.compareResultAsText(secondResults, secondExpected);
+
+        TimeUnit.SECONDS.sleep(3);
+
+        TableResult thirdResult = tEnv.executeSql(query);
+        List<Row> thirdResults = CollectionUtil.iteratorToList(thirdResult.collect());
+        String thirdExpected = "+I[2, 2]";
+        TestBaseUtils.compareResultAsText(thirdResults, thirdExpected);
+
+        TimeUnit.SECONDS.sleep(4);
+
+        TableResult lastResult = tEnv.executeSql(query);
+        List<Row> lastResults = CollectionUtil.iteratorToList(lastResult.collect());
+        assertThat(lastResults).isEmpty();
     }
 
     @Test

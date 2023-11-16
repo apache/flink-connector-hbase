@@ -135,7 +135,7 @@ public class HBaseSerde {
      *
      * @return The appropriate instance of Put for this use case.
      */
-    public @Nullable Put createPutMutation(RowData row, long timestamp) {
+    public @Nullable Put createPutMutation(RowData row, long timestamp, @Nullable Long timeToLive) {
         checkArgument(keyEncoder != null, "row key is not set.");
         byte[] rowkey = keyEncoder.encode(row, rowkeyIndex);
         if (rowkey.length == 0) {
@@ -144,6 +144,9 @@ public class HBaseSerde {
         }
         // upsert
         Put put = new Put(rowkey, timestamp);
+        if (timeToLive != null) {
+            put.setTTL(timeToLive);
+        }
         for (int i = 0; i < fieldLength; i++) {
             if (i != rowkeyIndex) {
                 int f = i > rowkeyIndex ? i - 1 : i;

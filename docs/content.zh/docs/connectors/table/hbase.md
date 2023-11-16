@@ -99,6 +99,12 @@ ON myTopic.key = hTable.rowkey;
       <td>HBase记录的时间戳。</td>
       <td><code>W</code></td>
     </tr>
+    <tr>
+      <td><code>ttl</code></td>
+      <td><code>BIGINT NOT NULL</code></td>
+      <td>HBase记录的生存时间（毫秒）。</td>
+      <td><code>W</code></td>
+    </tr>
     </tbody>
 </table>
 
