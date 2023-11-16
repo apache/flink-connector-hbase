@@ -36,6 +36,7 @@ import org.apache.hadoop.hbase.client.BufferedMutatorParams;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Mutation;
+import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.RetriesExhaustedWithDetailsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +74,7 @@ public class HBaseSinkFunction<T> extends RichSinkFunction<T>
     private final long bufferFlushMaxSizeInBytes;
     private final long bufferFlushMaxMutations;
     private final long bufferFlushIntervalMillis;
+    private final boolean overwriteKey;
     private final HBaseMutationConverter<T> mutationConverter;
 
     private transient Connection connection;
@@ -99,7 +101,8 @@ public class HBaseSinkFunction<T> extends RichSinkFunction<T>
             HBaseMutationConverter<T> mutationConverter,
             long bufferFlushMaxSizeInBytes,
             long bufferFlushMaxMutations,
-            long bufferFlushIntervalMillis) {
+            long bufferFlushIntervalMillis,
+            boolean overwriteKey) {
         this.hTableName = hTableName;
         // Configuration is not serializable
         this.serializedConfig = HBaseConfigurationUtil.serializeConfiguration(conf);
@@ -107,6 +110,7 @@ public class HBaseSinkFunction<T> extends RichSinkFunction<T>
         this.bufferFlushMaxSizeInBytes = bufferFlushMaxSizeInBytes;
         this.bufferFlushMaxMutations = bufferFlushMaxMutations;
         this.bufferFlushIntervalMillis = bufferFlushIntervalMillis;
+        this.overwriteKey = overwriteKey;
     }
 
     @Override
@@ -203,7 +207,15 @@ public class HBaseSinkFunction<T> extends RichSinkFunction<T>
     public void invoke(T value, Context context) throws Exception {
         checkErrorAndRethrow();
 
-        mutator.mutate(mutationConverter.convertToMutation(value));
+        Mutation mutation = mutationConverter.convertToMutation(value);
+        // If necessary, delete this key first before adding new data
+        if (overwriteKey) {
+            long now = System.currentTimeMillis();
+            mutator.mutator.mutate( new Delete(mutation.getRow()).setTimestamp(now));
+            mutator.mutate(mutation);
+        } else {
+            mutator.mutate(mutation);
+        }
 
         // flush when the buffer number of mutations greater than the configured max size.
         if (bufferFlushMaxMutations > 0

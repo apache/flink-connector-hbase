@@ -51,6 +51,7 @@ import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_MAX_ROWS;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_MAX_SIZE;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_IGNORE_NULL_VALUE;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_OVERWRITE_KEY;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_PARALLELISM;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.TABLE_NAME;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.ZOOKEEPER_QUORUM;
@@ -156,6 +157,7 @@ public class HBase2DynamicTableFactory
         set.add(SINK_BUFFER_FLUSH_INTERVAL);
         set.add(SINK_PARALLELISM);
         set.add(SINK_IGNORE_NULL_VALUE);
+        set.add(SINK_OVERWRITE_KEY);
         set.add(LOOKUP_ASYNC);
         set.add(LOOKUP_CACHE_MAX_ROWS);
         set.add(LOOKUP_CACHE_TTL);
@@ -182,7 +184,8 @@ public class HBase2DynamicTableFactory
                         SINK_BUFFER_FLUSH_MAX_SIZE,
                         SINK_BUFFER_FLUSH_MAX_ROWS,
                         SINK_BUFFER_FLUSH_INTERVAL,
-                        SINK_IGNORE_NULL_VALUE)
+                        SINK_IGNORE_NULL_VALUE,
+                        SINK_OVERWRITE_KEY)
                 .collect(Collectors.toSet());
     }
 }
