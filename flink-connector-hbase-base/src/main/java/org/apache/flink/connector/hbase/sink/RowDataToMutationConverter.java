@@ -18,6 +18,7 @@
 
 package org.apache.flink.connector.hbase.sink;
 
+import org.apache.flink.connector.hbase.sink.WritableMetadata.TimeToLiveMetadata;
 import org.apache.flink.connector.hbase.sink.WritableMetadata.TimestampMetadata;
 import org.apache.flink.connector.hbase.util.HBaseSerde;
 import org.apache.flink.connector.hbase.util.HBaseTableSchema;
@@ -40,6 +41,7 @@ public class RowDataToMutationConverter implements HBaseMutationConverter<RowDat
     private final String nullStringLiteral;
     private final boolean ignoreNullValue;
     private final TimestampMetadata timestampMetadata;
+    private final TimeToLiveMetadata timeToLiveMetadata;
     private transient HBaseSerde serde;
 
     public RowDataToMutationConverter(
@@ -51,7 +53,8 @@ public class RowDataToMutationConverter implements HBaseMutationConverter<RowDat
         this.schema = schema;
         this.nullStringLiteral = nullStringLiteral;
         this.ignoreNullValue = ignoreNullValue;
-        this.timestampMetadata = TimestampMetadata.of(metadataKeys, physicalDataType);
+        this.timestampMetadata = new TimestampMetadata(metadataKeys, physicalDataType);
+        this.timeToLiveMetadata = new TimeToLiveMetadata(metadataKeys, physicalDataType);
     }
 
     @Override
@@ -62,9 +65,10 @@ public class RowDataToMutationConverter implements HBaseMutationConverter<RowDat
     @Override
     public Mutation convertToMutation(RowData record) {
         Long timestamp = timestampMetadata.read(record);
+        Long timeToLive = timeToLiveMetadata.read(record);
         RowKind kind = record.getRowKind();
         if (kind == RowKind.INSERT || kind == RowKind.UPDATE_AFTER) {
-            return serde.createPutMutation(record, timestamp);
+            return serde.createPutMutation(record, timestamp, timeToLive);
         } else {
             return serde.createDeleteMutation(record, timestamp);
         }

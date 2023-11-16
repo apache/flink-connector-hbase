@@ -35,6 +35,8 @@ public abstract class WritableMetadata<T> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    public abstract T read(RowData row);
+
     /**
      * Returns the map of metadata keys and their corresponding data types that can be consumed by
      * HBase sink for writing.
@@ -44,10 +46,16 @@ public abstract class WritableMetadata<T> implements Serializable {
     public static Map<String, DataType> list() {
         Map<String, DataType> metadataMap = new HashMap<>();
         metadataMap.put(TimestampMetadata.KEY, TimestampMetadata.DATA_TYPE);
+        metadataMap.put(TimeToLiveMetadata.KEY, TimeToLiveMetadata.DATA_TYPE);
         return Collections.unmodifiableMap(metadataMap);
     }
 
-    public abstract T read(RowData row);
+    private static void validateNotNull(RowData row, int pos, String key) {
+        if (row.isNullAt(pos)) {
+            throw new IllegalArgumentException(
+                    String.format("Writable metadata '%s' can not accept null value", key));
+        }
+    }
 
     /** Timestamp metadata for HBase. */
     public static class TimestampMetadata extends WritableMetadata<Long> {
@@ -58,8 +66,9 @@ public abstract class WritableMetadata<T> implements Serializable {
 
         private final int pos;
 
-        public TimestampMetadata(int pos) {
-            this.pos = pos;
+        public TimestampMetadata(List<String> metadataKeys, DataType physicalDataType) {
+            int idx = metadataKeys.indexOf(KEY);
+            this.pos = idx < 0 ? -1 : idx + physicalDataType.getLogicalType().getChildren().size();
         }
 
         @Override
@@ -67,20 +76,31 @@ public abstract class WritableMetadata<T> implements Serializable {
             if (pos < 0) {
                 return HConstants.LATEST_TIMESTAMP;
             }
-            if (row.isNullAt(pos)) {
-                throw new IllegalArgumentException(
-                        String.format("Writable metadata '%s' can not accept null value", KEY));
-            }
+            validateNotNull(row, pos, KEY);
             return row.getTimestamp(pos, 3).getMillisecond();
         }
+    }
 
-        public static TimestampMetadata of(List<String> metadataKeys, DataType physicalDataType) {
-            int pos = metadataKeys.indexOf(TimestampMetadata.KEY);
+    /** Time-to-live metadata for HBase. */
+    public static class TimeToLiveMetadata extends WritableMetadata<Long> {
+
+        public static final String KEY = "ttl";
+        public static final DataType DATA_TYPE = DataTypes.BIGINT().nullable();
+
+        private final int pos;
+
+        public TimeToLiveMetadata(List<String> metadataKeys, DataType physicalDataType) {
+            int idx = metadataKeys.indexOf(KEY);
+            this.pos = idx < 0 ? -1 : idx + physicalDataType.getLogicalType().getChildren().size();
+        }
+
+        @Override
+        public Long read(RowData row) {
             if (pos < 0) {
-                return new TimestampMetadata(-1);
+                return null;
             }
-            return new TimestampMetadata(
-                    pos + physicalDataType.getLogicalType().getChildren().size());
+            validateNotNull(row, pos, KEY);
+            return row.getLong(pos);
         }
     }
 }
