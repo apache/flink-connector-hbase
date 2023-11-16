@@ -371,7 +371,7 @@ class HBaseConnectorITCase extends HBaseTestBase {
     }
 
     @Test
-    public void testTableSinkWithTimestampMetadata() throws Exception {
+    void testTableSinkWithTimestampMetadata() throws Exception {
         StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
 
@@ -421,7 +421,7 @@ class HBaseConnectorITCase extends HBaseTestBase {
     }
 
     @Test
-    public void testTableSinkWithTTLMetadata() throws Exception {
+    void testTableSinkWithTTLMetadata() throws Exception {
         StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
 

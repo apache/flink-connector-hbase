@@ -311,7 +311,7 @@ class HBaseDynamicTableFactoryTest {
     }
 
     @Test
-    public void testUnknownOption() {
+    void testUnknownOption() {
         Map<String, String> options = getAllOptions();
         options.put("sink.unknown.key", "unknown-value");
         ResolvedSchema schema =
@@ -330,7 +330,7 @@ class HBaseDynamicTableFactoryTest {
     }
 
     @Test
-    public void testTypeWithUnsupportedPrecision() {
+    void testTypeWithUnsupportedPrecision() {
         Map<String, String> options = getAllOptions();
         // test unsupported timestamp precision
         ResolvedSchema wrongTs =

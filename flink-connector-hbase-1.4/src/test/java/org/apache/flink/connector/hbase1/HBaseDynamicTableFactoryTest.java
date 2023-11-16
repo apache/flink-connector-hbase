@@ -129,7 +129,7 @@ class HBaseDynamicTableFactoryTest {
     }
 
     @Test
-    public void testLookupOptions() {
+    void testLookupOptions() {
         ResolvedSchema schema = ResolvedSchema.of(Column.physical(ROWKEY, STRING()));
         Map<String, String> options = getAllOptions();
         options.put("lookup.cache", "PARTIAL");
@@ -155,7 +155,7 @@ class HBaseDynamicTableFactoryTest {
     }
 
     @Test
-    public void testTableSinkFactory() {
+    void testTableSinkFactory() {
         ResolvedSchema schema =
                 ResolvedSchema.of(
                         Column.physical(ROWKEY, STRING()),
@@ -215,7 +215,7 @@ class HBaseDynamicTableFactoryTest {
     }
 
     @Test
-    public void testBufferFlushOptions() {
+    void testBufferFlushOptions() {
         Map<String, String> options = getAllOptions();
         options.put("sink.buffer-flush.max-size", "10mb");
         options.put("sink.buffer-flush.max-rows", "100");
@@ -235,7 +235,7 @@ class HBaseDynamicTableFactoryTest {
     }
 
     @Test
-    public void testSinkIgnoreNullValueOptions() {
+    void testSinkIgnoreNullValueOptions() {
         Map<String, String> options = getAllOptions();
         options.put("sink.ignore-null-value", "true");
 
@@ -247,7 +247,7 @@ class HBaseDynamicTableFactoryTest {
     }
 
     @Test
-    public void testParallelismOptions() {
+    void testParallelismOptions() {
         Map<String, String> options = getAllOptions();
         options.put("sink.parallelism", "2");
 
@@ -263,7 +263,7 @@ class HBaseDynamicTableFactoryTest {
     }
 
     @Test
-    public void testDisabledBufferFlushOptions() {
+    void testDisabledBufferFlushOptions() {
         Map<String, String> options = getAllOptions();
         options.put("sink.buffer-flush.max-size", "0");
         options.put("sink.buffer-flush.max-rows", "0");
@@ -283,7 +283,7 @@ class HBaseDynamicTableFactoryTest {
     }
 
     @Test
-    public void testUnknownOption() {
+    void testUnknownOption() {
         Map<String, String> options = getAllOptions();
         options.put("sink.unknown.key", "unknown-value");
         ResolvedSchema schema =
@@ -302,7 +302,7 @@ class HBaseDynamicTableFactoryTest {
     }
 
     @Test
-    public void testTypeWithUnsupportedPrecision() {
+    void testTypeWithUnsupportedPrecision() {
         Map<String, String> options = getAllOptions();
         // test unsupported timestamp precision
         ResolvedSchema wrongTs =
