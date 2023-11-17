@@ -98,8 +98,10 @@ public class HBaseConnectorOptions {
             ConfigOptions.key("sink.overwrite-key")
                     .booleanType()
                     .defaultValue(false)
-                    .withDescription("Writing option, Do you want to overwrite this key? If necessary, "
-                            + "delete this key first before adding new data.");
+                    .withDescription(
+                            "Writing option, Do you want to overwrite this key? If necessary, "
+                                    + "delete this key first before adding new data.");
+
     public static final ConfigOption<Boolean> LOOKUP_ASYNC =
             ConfigOptions.key("lookup.async")
                     .booleanType()

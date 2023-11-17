@@ -35,8 +35,8 @@ import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.BufferedMutatorParams;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.RetriesExhaustedWithDetailsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -211,7 +211,7 @@ public class HBaseSinkFunction<T> extends RichSinkFunction<T>
         // If necessary, delete this key first before adding new data
         if (overwriteKey) {
             long now = System.currentTimeMillis();
-            mutator.mutator.mutate( new Delete(mutation.getRow()).setTimestamp(now));
+            mutator.mutator.mutate(new Delete(mutation.getRow()).setTimestamp(now));
             mutator.mutate(mutation);
         } else {
             mutator.mutate(mutation);

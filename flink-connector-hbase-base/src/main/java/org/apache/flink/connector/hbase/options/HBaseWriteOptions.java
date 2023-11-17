@@ -172,7 +172,7 @@ public class HBaseWriteOptions implements Serializable {
         }
 
         /**
-         * Optional. Writing option, Do you want to overwrite this key? If necessary,delete this key first before adding new data.
+         * Optional. Writing option, If necessary,delete this key first before adding new data.
          */
         public Builder setOverwriteKey(boolean overwriteKey) {
             this.overwriteKey = overwriteKey;
