@@ -25,7 +25,7 @@ import org.apache.flink.table.connector.source.lookup.LookupOptions;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.DataType;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,13 +40,12 @@ import static org.apache.flink.table.api.DataTypes.FIELD;
 import static org.apache.flink.table.api.DataTypes.INT;
 import static org.apache.flink.table.api.DataTypes.ROW;
 import static org.apache.flink.table.api.DataTypes.STRING;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /** Test suite for {@link HBaseRowDataAsyncLookupFunction}. */
-public class HBaseRowDataAsyncLookupFunctionTest extends HBaseTestBase {
+class HBaseRowDataAsyncLookupFunctionTest extends HBaseTestBase {
     @Test
-    public void testEval() throws Exception {
+    void testEval() throws Exception {
         HBaseRowDataAsyncLookupFunction lookupFunction = buildRowDataAsyncLookupFunction();
 
         lookupFunction.open(null);
@@ -69,21 +68,21 @@ public class HBaseRowDataAsyncLookupFunctionTest extends HBaseTestBase {
                     });
         }
         // this verifies lookup calls are async
-        assertTrue(result.size() < rowkeys.length);
+        assertThat(result.size()).isLessThan(rowkeys.length);
         latch.await();
         lookupFunction.close();
-        List<String> sortResult = new ArrayList<>(result);
-        Collections.sort(sortResult);
-        List<String> expected = new ArrayList<>();
-        expected.add("12: null");
-        expected.add("12: null");
-        expected.add("1: +I(1,+I(10),+I(Hello-1,100),+I(1.01,false,Welt-1))");
-        expected.add("1: +I(1,+I(10),+I(Hello-1,100),+I(1.01,false,Welt-1))");
-        expected.add("2: +I(2,+I(20),+I(Hello-2,200),+I(2.02,true,Welt-2))");
-        expected.add("3: +I(3,+I(30),+I(Hello-3,300),+I(3.03,false,Welt-3))");
-        expected.add("3: +I(3,+I(30),+I(Hello-3,300),+I(3.03,false,Welt-3))");
-        expected.add("4: +I(4,+I(40),+I(null,400),+I(4.04,true,Welt-4))");
-        assertEquals(expected, sortResult);
+        Collections.sort(result);
+
+        assertThat(result)
+                .containsExactly(
+                        "12: null",
+                        "12: null",
+                        "1: +I(1,+I(10),+I(Hello-1,100),+I(1.01,false,Welt-1))",
+                        "1: +I(1,+I(10),+I(Hello-1,100),+I(1.01,false,Welt-1))",
+                        "2: +I(2,+I(20),+I(Hello-2,200),+I(2.02,true,Welt-2))",
+                        "3: +I(3,+I(30),+I(Hello-3,300),+I(3.03,false,Welt-3))",
+                        "3: +I(3,+I(30),+I(Hello-3,300),+I(3.03,false,Welt-3))",
+                        "4: +I(4,+I(40),+I(null,400),+I(4.04,true,Welt-4))");
     }
 
     private HBaseRowDataAsyncLookupFunction buildRowDataAsyncLookupFunction() {

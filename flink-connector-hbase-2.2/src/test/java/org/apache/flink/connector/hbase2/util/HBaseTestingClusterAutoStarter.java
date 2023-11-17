@@ -20,6 +20,9 @@
 
 package org.apache.flink.connector.hbase2.util;
 
+import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration;
+import org.apache.flink.test.junit5.MiniClusterExtension;
+
 import org.apache.commons.lang3.Range;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -35,17 +38,17 @@ import org.apache.hadoop.hbase.ZooKeeperConnectionException;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.util.VersionUtil;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 /**
  * By using this class as the super class of a set of tests you will have a HBase testing cluster
@@ -53,6 +56,14 @@ import static org.junit.Assert.assertTrue;
  */
 public class HBaseTestingClusterAutoStarter {
     private static final Log LOG = LogFactory.getLog(HBaseTestingClusterAutoStarter.class);
+
+    @RegisterExtension
+    private static final MiniClusterExtension MINI_CLUSTER_EXTENSION =
+            new MiniClusterExtension(
+                    new MiniClusterResourceConfiguration.Builder()
+                            .setNumberTaskManagers(1)
+                            .setNumberSlotsPerTaskManager(4)
+                            .build());
 
     private static final Range<String> HADOOP_VERSION_RANGE =
             Range.between("2.8.0", "3.0.3", VersionUtil::compareVersions);
@@ -65,7 +76,7 @@ public class HBaseTestingClusterAutoStarter {
 
     protected static void createTable(
             TableName tableName, byte[][] columnFamilyName, byte[][] splitKeys) {
-        assertNotNull("HBaseAdmin is not initialized successfully.", admin);
+        assertThat(admin).as("HBaseAdmin is not initialized successfully.").isNotNull();
         HTableDescriptor desc = new HTableDescriptor(tableName);
         for (byte[] fam : columnFamilyName) {
             HColumnDescriptor colDef = new HColumnDescriptor(fam);
@@ -75,15 +86,15 @@ public class HBaseTestingClusterAutoStarter {
         try {
             admin.createTable(desc, splitKeys);
             createdTables.add(tableName);
-            assertTrue("Fail to create the table", admin.tableExists(tableName));
+            assertThat(admin.tableExists(tableName)).as("Fail to create the table").isTrue();
         } catch (IOException e) {
-            assertNull("Exception found while creating table", e);
+            fail("Exception found while creating table", e);
         }
     }
 
     protected static Table openTable(TableName tableName) throws IOException {
         Table table = TEST_UTIL.getConnection().getTable(tableName);
-        assertTrue("Fail to create the table", admin.tableExists(tableName));
+        assertThat(admin.tableExists(tableName)).as("Fail to create the table").isTrue();
         return table;
     }
 
@@ -96,7 +107,7 @@ public class HBaseTestingClusterAutoStarter {
                         admin.deleteTable(tableName);
                     }
                 } catch (IOException e) {
-                    assertNull("Exception found deleting the table", e);
+                    fail("Exception found deleting the table", e);
                 }
             }
         }
@@ -117,19 +128,19 @@ public class HBaseTestingClusterAutoStarter {
         try {
             admin = TEST_UTIL.getAdmin();
         } catch (MasterNotRunningException e) {
-            assertNull("Master is not running", e);
+            fail("Master is not running", e);
         } catch (ZooKeeperConnectionException e) {
-            assertNull("Cannot connect to ZooKeeper", e);
+            fail("Cannot connect to ZooKeeper", e);
         } catch (IOException e) {
-            assertNull("IOException", e);
+            fail("IOException", e);
         }
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         // HBase 2.2.3 HBaseTestingUtility works with only a certain range of hadoop versions
         String hadoopVersion = System.getProperty("hadoop.version", "2.8.5");
-        Assume.assumeTrue(HADOOP_VERSION_RANGE.contains(hadoopVersion));
+        assumeThat(HADOOP_VERSION_RANGE.contains(hadoopVersion)).isTrue();
         TEST_UTIL.startMiniCluster(1);
 
         // https://issues.apache.org/jira/browse/HBASE-11711
@@ -146,7 +157,7 @@ public class HBaseTestingClusterAutoStarter {
         initialize(TEST_UTIL.getConfiguration());
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         if (conf == null) {
             LOG.info("Skipping Hbase tear down. It was never started");
