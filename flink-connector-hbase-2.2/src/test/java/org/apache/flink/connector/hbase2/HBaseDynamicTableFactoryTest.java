@@ -26,6 +26,7 @@ import org.apache.flink.connector.hbase.util.HBaseTableSchema;
 import org.apache.flink.connector.hbase2.sink.HBaseDynamicTableSink;
 import org.apache.flink.connector.hbase2.source.HBaseDynamicTableSource;
 import org.apache.flink.connector.hbase2.source.HBaseRowDataAsyncLookupFunction;
+import org.apache.flink.core.testutils.FlinkAssertions;
 import org.apache.flink.table.catalog.Column;
 import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.connector.sink.DynamicTableSink;
@@ -39,19 +40,14 @@ import org.apache.flink.table.functions.AsyncLookupFunction;
 import org.apache.flink.table.functions.LookupFunction;
 import org.apache.flink.table.runtime.connector.sink.SinkRuntimeProviderContext;
 import org.apache.flink.table.runtime.connector.source.LookupRuntimeProviderContext;
-import org.apache.flink.table.types.DataType;
-import org.apache.flink.util.ExceptionUtils;
 
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.hadoop.hbase.HConstants;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.apache.flink.table.api.DataTypes.BIGINT;
 import static org.apache.flink.table.api.DataTypes.BOOLEAN;
@@ -67,13 +63,10 @@ import static org.apache.flink.table.api.DataTypes.TIMESTAMP;
 import static org.apache.flink.table.factories.utils.FactoryMocks.createTableSink;
 import static org.apache.flink.table.factories.utils.FactoryMocks.createTableSource;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** Unit test for {@link HBase2DynamicTableFactory}. */
-public class HBaseDynamicTableFactoryTest {
+class HBaseDynamicTableFactoryTest {
 
     private static final String FAMILY1 = "f1";
     private static final String FAMILY2 = "f2";
@@ -85,11 +78,8 @@ public class HBaseDynamicTableFactoryTest {
     private static final String COL4 = "c4";
     private static final String ROWKEY = "rowkey";
 
-    @Rule public final ExpectedException thrown = ExpectedException.none();
-
-    @SuppressWarnings("rawtypes")
     @Test
-    public void testTableSourceFactory() {
+    void testTableSourceFactory() {
         ResolvedSchema schema =
                 ResolvedSchema.of(
                         Column.physical(FAMILY1, ROW(FIELD(COL1, INT()))),
@@ -110,44 +100,39 @@ public class HBaseDynamicTableFactoryTest {
                                         FIELD(COL4, TIME()))));
 
         DynamicTableSource source = createTableSource(schema, getAllOptions());
-        assertTrue(source instanceof HBaseDynamicTableSource);
+        assertThat(source).isInstanceOf(HBaseDynamicTableSource.class);
         HBaseDynamicTableSource hbaseSource = (HBaseDynamicTableSource) source;
 
         int[][] lookupKey = {{2}};
         LookupTableSource.LookupRuntimeProvider lookupProvider =
                 hbaseSource.getLookupRuntimeProvider(new LookupRuntimeProviderContext(lookupKey));
-        assertTrue(lookupProvider instanceof LookupFunctionProvider);
+        assertThat(lookupProvider).isInstanceOf(LookupFunctionProvider.class);
 
         LookupFunction tableFunction =
                 ((LookupFunctionProvider) lookupProvider).createLookupFunction();
-        assertTrue(tableFunction instanceof HBaseRowDataLookupFunction);
-        assertEquals(
-                "testHBastTable", ((HBaseRowDataLookupFunction) tableFunction).getHTableName());
+        assertThat(tableFunction).isInstanceOf(HBaseRowDataLookupFunction.class);
+        assertThat(((HBaseRowDataLookupFunction) tableFunction).getHTableName())
+                .isEqualTo("testHBastTable");
 
         HBaseTableSchema hbaseSchema = hbaseSource.getHBaseTableSchema();
-        assertEquals(2, hbaseSchema.getRowKeyIndex());
-        assertEquals(Optional.of(Types.LONG), hbaseSchema.getRowKeyTypeInfo());
+        assertThat(hbaseSchema.getRowKeyIndex()).isEqualTo(2);
+        assertThat(hbaseSchema.getRowKeyTypeInfo()).contains(Types.LONG);
 
-        assertArrayEquals(new String[] {"f1", "f2", "f3", "f4"}, hbaseSchema.getFamilyNames());
-        assertArrayEquals(new String[] {"c1"}, hbaseSchema.getQualifierNames("f1"));
-        assertArrayEquals(new String[] {"c1", "c2"}, hbaseSchema.getQualifierNames("f2"));
-        assertArrayEquals(new String[] {"c1", "c2", "c3"}, hbaseSchema.getQualifierNames("f3"));
-        assertArrayEquals(
-                new String[] {"c1", "c2", "c3", "c4"}, hbaseSchema.getQualifierNames("f4"));
-
-        assertArrayEquals(new DataType[] {INT()}, hbaseSchema.getQualifierDataTypes("f1"));
-        assertArrayEquals(
-                new DataType[] {INT(), BIGINT()}, hbaseSchema.getQualifierDataTypes("f2"));
-        assertArrayEquals(
-                new DataType[] {DOUBLE(), BOOLEAN(), STRING()},
-                hbaseSchema.getQualifierDataTypes("f3"));
-        assertArrayEquals(
-                new DataType[] {DECIMAL(10, 3), TIMESTAMP(3), DATE(), TIME()},
-                hbaseSchema.getQualifierDataTypes("f4"));
+        assertThat(hbaseSchema.getFamilyNames()).containsExactly("f1", "f2", "f3", "f4");
+        assertThat(hbaseSchema.getQualifierNames("f1")).containsExactly("c1");
+        assertThat(hbaseSchema.getQualifierNames("f2")).containsExactly("c1", "c2");
+        assertThat(hbaseSchema.getQualifierNames("f3")).containsExactly("c1", "c2", "c3");
+        assertThat(hbaseSchema.getQualifierNames("f4")).containsExactly("c1", "c2", "c3", "c4");
+        assertThat(hbaseSchema.getQualifierDataTypes("f1")).containsExactly(INT());
+        assertThat(hbaseSchema.getQualifierDataTypes("f2")).containsExactly(INT(), BIGINT());
+        assertThat(hbaseSchema.getQualifierDataTypes("f3"))
+                .containsExactly(DOUBLE(), BOOLEAN(), STRING());
+        assertThat(hbaseSchema.getQualifierDataTypes("f4"))
+                .containsExactly(DECIMAL(10, 3), TIMESTAMP(3), DATE(), TIME());
     }
 
     @Test
-    public void testLookupOptions() {
+    void testLookupOptions() {
         ResolvedSchema schema = ResolvedSchema.of(Column.physical(ROWKEY, STRING()));
         Map<String, String> options = getAllOptions();
         options.put("lookup.cache", "PARTIAL");
@@ -173,7 +158,7 @@ public class HBaseDynamicTableFactoryTest {
     }
 
     @Test
-    public void testTableSinkFactory() {
+    void testTableSinkFactory() {
         ResolvedSchema schema =
                 ResolvedSchema.of(
                         Column.physical(ROWKEY, STRING()),
@@ -190,29 +175,23 @@ public class HBaseDynamicTableFactoryTest {
                                         FIELD(COL4, TIME()))));
 
         DynamicTableSink sink = createTableSink(schema, getAllOptions());
-        assertTrue(sink instanceof HBaseDynamicTableSink);
+        assertThat(sink).isInstanceOf(HBaseDynamicTableSink.class);
         HBaseDynamicTableSink hbaseSink = (HBaseDynamicTableSink) sink;
 
         HBaseTableSchema hbaseSchema = hbaseSink.getHBaseTableSchema();
-        assertEquals(0, hbaseSchema.getRowKeyIndex());
-        assertEquals(Optional.of(STRING()), hbaseSchema.getRowKeyDataType());
+        assertThat(hbaseSchema.getRowKeyIndex()).isZero();
+        assertThat(hbaseSchema.getRowKeyDataType()).contains(STRING());
 
-        assertArrayEquals(new String[] {"f1", "f2", "f3", "f4"}, hbaseSchema.getFamilyNames());
-        assertArrayEquals(new String[] {"c1", "c2"}, hbaseSchema.getQualifierNames("f1"));
-        assertArrayEquals(new String[] {"c1", "c3"}, hbaseSchema.getQualifierNames("f2"));
-        assertArrayEquals(new String[] {"c2", "c3"}, hbaseSchema.getQualifierNames("f3"));
-        assertArrayEquals(
-                new String[] {"c1", "c2", "c3", "c4"}, hbaseSchema.getQualifierNames("f4"));
-
-        assertArrayEquals(
-                new DataType[] {DOUBLE(), INT()}, hbaseSchema.getQualifierDataTypes("f1"));
-        assertArrayEquals(
-                new DataType[] {INT(), BIGINT()}, hbaseSchema.getQualifierDataTypes("f2"));
-        assertArrayEquals(
-                new DataType[] {BOOLEAN(), STRING()}, hbaseSchema.getQualifierDataTypes("f3"));
-        assertArrayEquals(
-                new DataType[] {DECIMAL(10, 3), TIMESTAMP(3), DATE(), TIME()},
-                hbaseSchema.getQualifierDataTypes("f4"));
+        assertThat(hbaseSchema.getFamilyNames()).containsExactly("f1", "f2", "f3", "f4");
+        assertThat(hbaseSchema.getQualifierNames("f1")).containsExactly("c1", "c2");
+        assertThat(hbaseSchema.getQualifierNames("f2")).containsExactly("c1", "c3");
+        assertThat(hbaseSchema.getQualifierNames("f3")).containsExactly("c2", "c3");
+        assertThat(hbaseSchema.getQualifierNames("f4")).containsExactly("c1", "c2", "c3", "c4");
+        assertThat(hbaseSchema.getQualifierDataTypes("f1")).containsExactly(DOUBLE(), INT());
+        assertThat(hbaseSchema.getQualifierDataTypes("f2")).containsExactly(INT(), BIGINT());
+        assertThat(hbaseSchema.getQualifierDataTypes("f3")).containsExactly(BOOLEAN(), STRING());
+        assertThat(hbaseSchema.getQualifierDataTypes("f4"))
+                .containsExactly(DECIMAL(10, 3), TIMESTAMP(3), DATE(), TIME());
 
         // verify hadoop Configuration
         org.apache.hadoop.conf.Configuration expectedConfiguration =
@@ -223,12 +202,11 @@ public class HBaseDynamicTableFactoryTest {
 
         org.apache.hadoop.conf.Configuration actualConfiguration = hbaseSink.getConfiguration();
 
-        assertEquals(
-                IteratorUtils.toList(expectedConfiguration.iterator()),
-                IteratorUtils.toList(actualConfiguration.iterator()));
+        assertThat(IteratorUtils.toList(actualConfiguration.iterator()))
+                .isEqualTo(IteratorUtils.toList(expectedConfiguration.iterator()));
 
         // verify tableName
-        assertEquals("testHBastTable", hbaseSink.getTableName());
+        assertThat(hbaseSink.getTableName()).isEqualTo("testHBastTable");
 
         HBaseWriteOptions expectedWriteOptions =
                 HBaseWriteOptions.builder()
@@ -237,11 +215,11 @@ public class HBaseDynamicTableFactoryTest {
                         .setBufferFlushMaxSizeInBytes(2 * 1024 * 1024)
                         .build();
         HBaseWriteOptions actualWriteOptions = hbaseSink.getWriteOptions();
-        assertEquals(expectedWriteOptions, actualWriteOptions);
+        assertThat(actualWriteOptions).isEqualTo(expectedWriteOptions);
     }
 
     @Test
-    public void testBufferFlushOptions() {
+    void testBufferFlushOptions() {
         Map<String, String> options = getAllOptions();
         options.put("sink.buffer-flush.max-size", "10mb");
         options.put("sink.buffer-flush.max-rows", "100");
@@ -257,11 +235,11 @@ public class HBaseDynamicTableFactoryTest {
                         .setBufferFlushMaxSizeInBytes(10 * 1024 * 1024)
                         .build();
         HBaseWriteOptions actual = ((HBaseDynamicTableSink) sink).getWriteOptions();
-        assertEquals(expected, actual);
+        assertThat(actual).isEqualTo(expected);
     }
 
     @Test
-    public void testSinkIgnoreNullValueOptions() {
+    void testSinkIgnoreNullValueOptions() {
         Map<String, String> options = getAllOptions();
         options.put("sink.ignore-null-value", "true");
 
@@ -273,23 +251,23 @@ public class HBaseDynamicTableFactoryTest {
     }
 
     @Test
-    public void testParallelismOptions() {
+    void testParallelismOptions() {
         Map<String, String> options = getAllOptions();
         options.put("sink.parallelism", "2");
 
         ResolvedSchema schema = ResolvedSchema.of(Column.physical(ROWKEY, STRING()));
 
         DynamicTableSink sink = createTableSink(schema, options);
-        assertTrue(sink instanceof HBaseDynamicTableSink);
+        assertThat(sink).isInstanceOf(HBaseDynamicTableSink.class);
         HBaseDynamicTableSink hbaseSink = (HBaseDynamicTableSink) sink;
         SinkFunctionProvider provider =
                 (SinkFunctionProvider)
                         hbaseSink.getSinkRuntimeProvider(new SinkRuntimeProviderContext(false));
-        assertEquals(2, (long) provider.getParallelism().get());
+        assertThat(provider.getParallelism()).contains(2);
     }
 
     @Test
-    public void testLookupAsync() {
+    void testLookupAsync() {
         Map<String, String> options = getAllOptions();
         options.put("lookup.async", "true");
         ResolvedSchema schema =
@@ -297,24 +275,23 @@ public class HBaseDynamicTableFactoryTest {
                         Column.physical(ROWKEY, STRING()),
                         Column.physical(FAMILY1, ROW(FIELD(COL1, DOUBLE()), FIELD(COL2, INT()))));
         DynamicTableSource source = createTableSource(schema, options);
-        assertTrue(source instanceof HBaseDynamicTableSource);
+        assertThat(source).isInstanceOf(HBaseDynamicTableSource.class);
         HBaseDynamicTableSource hbaseSource = (HBaseDynamicTableSource) source;
 
         int[][] lookupKey = {{0}};
         LookupTableSource.LookupRuntimeProvider lookupProvider =
                 hbaseSource.getLookupRuntimeProvider(new LookupRuntimeProviderContext(lookupKey));
-        assertTrue(lookupProvider instanceof AsyncLookupFunctionProvider);
+        assertThat(lookupProvider).isInstanceOf(AsyncLookupFunctionProvider.class);
 
         AsyncLookupFunction asyncTableFunction =
                 ((AsyncLookupFunctionProvider) lookupProvider).createAsyncLookupFunction();
-        assertTrue(asyncTableFunction instanceof HBaseRowDataAsyncLookupFunction);
-        assertEquals(
-                "testHBastTable",
-                ((HBaseRowDataAsyncLookupFunction) asyncTableFunction).getHTableName());
+        assertThat(asyncTableFunction).isInstanceOf(HBaseRowDataAsyncLookupFunction.class);
+        assertThat(((HBaseRowDataAsyncLookupFunction) asyncTableFunction).getHTableName())
+                .isEqualTo("testHBastTable");
     }
 
     @Test
-    public void testDisabledBufferFlushOptions() {
+    void testDisabledBufferFlushOptions() {
         Map<String, String> options = getAllOptions();
         options.put("sink.buffer-flush.max-size", "0");
         options.put("sink.buffer-flush.max-rows", "0");
@@ -330,11 +307,11 @@ public class HBaseDynamicTableFactoryTest {
                         .setBufferFlushMaxSizeInBytes(0)
                         .build();
         HBaseWriteOptions actual = ((HBaseDynamicTableSink) sink).getWriteOptions();
-        assertEquals(expected, actual);
+        assertThat(actual).isEqualTo(expected);
     }
 
     @Test
-    public void testUnknownOption() {
+    void testUnknownOption() {
         Map<String, String> options = getAllOptions();
         options.put("sink.unknown.key", "unknown-value");
         ResolvedSchema schema =
@@ -342,88 +319,49 @@ public class HBaseDynamicTableFactoryTest {
                         Column.physical(ROWKEY, STRING()),
                         Column.physical(FAMILY1, ROW(FIELD(COL1, DOUBLE()), FIELD(COL2, INT()))));
 
-        try {
-            createTableSource(schema, options);
-            fail("Should fail");
-        } catch (Exception e) {
-            assertTrue(
-                    ExceptionUtils.findThrowableWithMessage(
-                                    e, "Unsupported options:\n\nsink.unknown.key")
-                            .isPresent());
-        }
-
-        try {
-            createTableSink(schema, options);
-            fail("Should fail");
-        } catch (Exception e) {
-            assertTrue(
-                    ExceptionUtils.findThrowableWithMessage(
-                                    e, "Unsupported options:\n\nsink.unknown.key")
-                            .isPresent());
-        }
+        assertThatThrownBy(() -> createTableSource(schema, options))
+                .satisfies(
+                        FlinkAssertions.anyCauseMatches(
+                                "Unsupported options:\n\nsink.unknown.key"));
+        assertThatThrownBy(() -> createTableSink(schema, options))
+                .satisfies(
+                        FlinkAssertions.anyCauseMatches(
+                                "Unsupported options:\n\nsink.unknown.key"));
     }
 
     @Test
-    public void testTypeWithUnsupportedPrecision() {
+    void testTypeWithUnsupportedPrecision() {
         Map<String, String> options = getAllOptions();
         // test unsupported timestamp precision
-        ResolvedSchema schema =
+        ResolvedSchema wrongTs =
                 ResolvedSchema.of(
                         Column.physical(ROWKEY, STRING()),
                         Column.physical(
                                 FAMILY1, ROW(FIELD(COL1, TIMESTAMP(6)), FIELD(COL2, INT()))));
-        try {
-            createTableSource(schema, options);
-            fail("Should fail");
-        } catch (Exception e) {
-            assertTrue(
-                    ExceptionUtils.findThrowableWithMessage(
-                                    e,
-                                    "The precision 6 of TIMESTAMP type is out of the range [0, 3]"
-                                            + " supported by HBase connector")
-                            .isPresent());
-        }
 
-        try {
-            createTableSink(schema, options);
-            fail("Should fail");
-        } catch (Exception e) {
-            assertTrue(
-                    ExceptionUtils.findThrowableWithMessage(
-                                    e,
-                                    "The precision 6 of TIMESTAMP type is out of the range [0, 3]"
-                                            + " supported by HBase connector")
-                            .isPresent());
-        }
+        assertThatThrownBy(() -> createTableSource(wrongTs, options))
+                .satisfies(
+                        FlinkAssertions.anyCauseMatches(
+                                "The precision 6 of TIMESTAMP type is out of the range [0, 3] supported by HBase connector"));
+        assertThatThrownBy(() -> createTableSink(wrongTs, options))
+                .satisfies(
+                        FlinkAssertions.anyCauseMatches(
+                                "The precision 6 of TIMESTAMP type is out of the range [0, 3] supported by HBase connector"));
+
         // test unsupported time precision
-        schema =
+        ResolvedSchema wrongTimeSchema =
                 ResolvedSchema.of(
                         Column.physical(ROWKEY, STRING()),
                         Column.physical(FAMILY1, ROW(FIELD(COL1, TIME(6)), FIELD(COL2, INT()))));
 
-        try {
-            createTableSource(schema, options);
-            fail("Should fail");
-        } catch (Exception e) {
-            assertTrue(
-                    ExceptionUtils.findThrowableWithMessage(
-                                    e,
-                                    "The precision 6 of TIME type is out of the range [0, 3]"
-                                            + " supported by HBase connector")
-                            .isPresent());
-        }
-
-        try {
-            createTableSink(schema, options);
-            fail("Should fail");
-        } catch (Exception e) {
-            assertTrue(
-                    ExceptionUtils.findThrowableWithMessage(
-                                    e,
-                                    "The precision 6 of TIME type is out of the range [0, 3]"
-                                            + " supported by HBase connector")
-                            .isPresent());
-        }
+        assertThatThrownBy(() -> createTableSource(wrongTimeSchema, options))
+                .satisfies(
+                        FlinkAssertions.anyCauseMatches(
+                                "The precision 6 of TIME type is out of the range [0, 3] supported by HBase connector"));
+        assertThatThrownBy(() -> createTableSink(wrongTimeSchema, options))
+                .satisfies(
+                        FlinkAssertions.anyCauseMatches(
+                                "The precision 6 of TIME type is out of the range [0, 3] supported by HBase connector"));
     }
 
     private Map<String, String> getAllOptions() {

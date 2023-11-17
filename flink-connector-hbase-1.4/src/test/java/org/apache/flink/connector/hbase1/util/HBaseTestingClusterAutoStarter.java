@@ -20,7 +20,8 @@
 
 package org.apache.flink.connector.hbase1.util;
 
-import org.apache.flink.test.util.AbstractTestBase;
+import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration;
+import org.apache.flink.test.junit5.MiniClusterExtension;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,17 +37,17 @@ import org.apache.hadoop.hbase.ZooKeeperConnectionException;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.util.VersionUtil;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 /**
  * By using this class as the super class of a set of tests you will have a HBase testing cluster
@@ -64,9 +65,17 @@ import static org.junit.Assert.assertTrue;
 //
 // https://github.com/apache/hbase/blob/master/hbase-server/src/test/java/org/apache/hadoop/hbase/filter/FilterTestingCluster.java
 //
-public abstract class HBaseTestingClusterAutoStarter extends AbstractTestBase {
+public abstract class HBaseTestingClusterAutoStarter {
 
     private static final Log LOG = LogFactory.getLog(HBaseTestingClusterAutoStarter.class);
+
+    @RegisterExtension
+    private static final MiniClusterExtension MINI_CLUSTER_EXTENSION =
+            new MiniClusterExtension(
+                    new MiniClusterResourceConfiguration.Builder()
+                            .setNumberTaskManagers(1)
+                            .setNumberSlotsPerTaskManager(4)
+                            .build());
 
     private static final HBaseTestingUtility TEST_UTIL = new HBaseTestingUtility();
     private static HBaseAdmin admin = null;
@@ -78,7 +87,7 @@ public abstract class HBaseTestingClusterAutoStarter extends AbstractTestBase {
             TableName tableName, byte[][] columnFamilyName, byte[][] splitKeys) {
         LOG.info("HBase minicluster: Creating table " + tableName.getNameAsString());
 
-        assertNotNull("HBaseAdmin is not initialized successfully.", admin);
+        assertThat(admin).as("HBaseAdmin is not initialized successfully.").isNotNull();
         HTableDescriptor desc = new HTableDescriptor(tableName);
         for (byte[] fam : columnFamilyName) {
             HColumnDescriptor colDef = new HColumnDescriptor(fam);
@@ -88,15 +97,15 @@ public abstract class HBaseTestingClusterAutoStarter extends AbstractTestBase {
         try {
             admin.createTable(desc, splitKeys);
             createdTables.add(tableName);
-            assertTrue("Fail to create the table", admin.tableExists(tableName));
+            assertThat(admin.tableExists(tableName)).as("Fail to create the table").isTrue();
         } catch (IOException e) {
-            assertNull("Exception found while creating table", e);
+            fail("Exception found while creating table", e);
         }
     }
 
     protected static HTable openTable(TableName tableName) throws IOException {
         HTable table = (HTable) admin.getConnection().getTable(tableName);
-        assertTrue("Fail to create the table", admin.tableExists(tableName));
+        assertThat(admin.tableExists(tableName)).as("Fail to create the table").isTrue();
         return table;
     }
 
@@ -109,7 +118,7 @@ public abstract class HBaseTestingClusterAutoStarter extends AbstractTestBase {
                         admin.deleteTable(tableName);
                     }
                 } catch (IOException e) {
-                    assertNull("Exception found deleting the table", e);
+                    fail("Exception found deleting the table", e);
                 }
             }
         }
@@ -122,23 +131,25 @@ public abstract class HBaseTestingClusterAutoStarter extends AbstractTestBase {
         try {
             admin = TEST_UTIL.getHBaseAdmin();
         } catch (MasterNotRunningException e) {
-            assertNull("Master is not running", e);
+            fail("Master is not running", e);
         } catch (ZooKeeperConnectionException e) {
-            assertNull("Cannot connect to ZooKeeper", e);
+            fail("Cannot connect to ZooKeeper", e);
         } catch (IOException e) {
-            assertNull("IOException", e);
+            fail("IOException", e);
         }
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         // HBase 1.4 does not work with Hadoop 3
         // because it uses Guava 12.0.1, Hadoop 3 uses Guava 27.0-jre.
         // There is no Guava version in between that works with both.
-        Assume.assumeTrue(
-                "This test is skipped for Hadoop versions above 3",
-                VersionUtil.compareVersions(System.getProperty("hadoop.version", "2.8.5"), "3.0.0")
-                        < 0);
+        assumeThat(
+                        VersionUtil.compareVersions(
+                                        System.getProperty("hadoop.version", "2.8.5"), "3.0.0")
+                                < 0)
+                .as("This test is skipped for Hadoop versions above 3")
+                .isTrue();
 
         LOG.info("HBase minicluster: Starting");
 
@@ -168,7 +179,7 @@ public abstract class HBaseTestingClusterAutoStarter extends AbstractTestBase {
         return conf;
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         if (conf == null) {
             LOG.info("Skipping Hbase tear down. It was never started");

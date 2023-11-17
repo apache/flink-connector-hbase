@@ -29,7 +29,6 @@ import org.apache.flink.connector.hbase.util.HBaseTableSchema;
 import org.apache.flink.connector.hbase2.source.AbstractTableInputFormat;
 import org.apache.flink.connector.hbase2.source.HBaseRowDataInputFormat;
 import org.apache.flink.connector.hbase2.util.HBaseTestBase;
-import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
@@ -39,7 +38,6 @@ import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.functions.ScalarFunction;
 import org.apache.flink.table.planner.factories.TestValuesTableFactory;
-import org.apache.flink.test.util.MiniClusterWithClientResource;
 import org.apache.flink.test.util.TestBaseUtils;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
@@ -49,8 +47,7 @@ import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -67,26 +64,16 @@ import java.util.stream.StreamSupport;
 import static org.apache.flink.table.api.Expressions.$;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 
 /** IT cases for HBase connector (including source and sink). */
-public class HBaseConnectorITCase extends HBaseTestBase {
-
-    @ClassRule
-    public static final MiniClusterWithClientResource MINI_CLUSTER =
-            new MiniClusterWithClientResource(
-                    new MiniClusterResourceConfiguration.Builder()
-                            .setConfiguration(new Configuration())
-                            .build());
+class HBaseConnectorITCase extends HBaseTestBase {
 
     // -------------------------------------------------------------------------------------
     // HBaseTableSource tests
     // -------------------------------------------------------------------------------------
 
     @Test
-    public void testTableSourceFullScan() {
+    void testTableSourceFullScan() {
         TableEnvironment tEnv = TableEnvironment.create(batchSettings);
 
         tEnv.executeSql(
@@ -132,7 +119,7 @@ public class HBaseConnectorITCase extends HBaseTestBase {
     }
 
     @Test
-    public void testTableSourceEmptyTableScan() {
+    void testTableSourceEmptyTableScan() {
         TableEnvironment tEnv = TableEnvironment.create(batchSettings);
 
         tEnv.executeSql(
@@ -157,7 +144,7 @@ public class HBaseConnectorITCase extends HBaseTestBase {
     }
 
     @Test
-    public void testTableSourceProjection() {
+    void testTableSourceProjection() {
         TableEnvironment tEnv = TableEnvironment.create(batchSettings);
 
         tEnv.executeSql(
@@ -201,7 +188,7 @@ public class HBaseConnectorITCase extends HBaseTestBase {
     }
 
     @Test
-    public void testTableSourceFieldOrder() {
+    void testTableSourceFieldOrder() {
         TableEnvironment tEnv = TableEnvironment.create(batchSettings);
 
         tEnv.executeSql(
@@ -237,7 +224,7 @@ public class HBaseConnectorITCase extends HBaseTestBase {
     }
 
     @Test
-    public void testTableSourceReadAsByteArray() {
+    void testTableSourceReadAsByteArray() {
         TableEnvironment tEnv = TableEnvironment.create(batchSettings);
 
         tEnv.executeSql(
@@ -279,7 +266,7 @@ public class HBaseConnectorITCase extends HBaseTestBase {
     }
 
     @Test
-    public void testTableSink() throws Exception {
+    void testTableSink() throws Exception {
         StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
 
@@ -306,8 +293,7 @@ public class HBaseConnectorITCase extends HBaseTestBase {
         // wait to finish
         tableResult.await();
 
-        assertEquals(
-                "Expected INSERT rowKind", RowKind.INSERT, tableResult.collect().next().getKind());
+        assertThat(tableResult.collect().next().getKind()).isEqualTo(RowKind.INSERT);
 
         // start a batch scan job to verify contents in HBase table
         TableEnvironment batchEnv = TableEnvironment.create(batchSettings);
@@ -326,7 +312,8 @@ public class HBaseConnectorITCase extends HBaseTestBase {
         Table countTable =
                 batchEnv.sqlQuery("SELECT COUNT(h.rowkey) FROM " + TEST_TABLE_2 + " AS h");
 
-        assertEquals(new Long(expected.size()), countTable.execute().collect().next().getField(0));
+        assertThat(countTable.execute().collect().next().getField(0))
+                .isEqualTo(new Long(expected.size()));
 
         Table table =
                 batchEnv.sqlQuery(
@@ -350,7 +337,7 @@ public class HBaseConnectorITCase extends HBaseTestBase {
     }
 
     @Test
-    public void testTableSinkWithChangelog() throws Exception {
+    void testTableSinkWithChangelog() throws Exception {
         StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
 
@@ -403,7 +390,7 @@ public class HBaseConnectorITCase extends HBaseTestBase {
     }
 
     @Test
-    public void testTableSinkWithTimestampMetadata() throws Exception {
+    void testTableSinkWithTimestampMetadata() throws Exception {
         StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
 
@@ -453,7 +440,7 @@ public class HBaseConnectorITCase extends HBaseTestBase {
     }
 
     @Test
-    public void testTableSinkWithTTLMetadata() throws Exception {
+    void testTableSinkWithTTLMetadata() throws Exception {
         StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
 
@@ -521,7 +508,7 @@ public class HBaseConnectorITCase extends HBaseTestBase {
     }
 
     @Test
-    public void testTableSourceSinkWithDDL() throws Exception {
+    void testTableSourceSinkWithDDL() throws Exception {
         StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
 
@@ -549,8 +536,7 @@ public class HBaseConnectorITCase extends HBaseTestBase {
         // wait to finish
         tableResult.await();
 
-        assertEquals(
-                "Expected INSERT rowKind", RowKind.INSERT, tableResult.collect().next().getKind());
+        assertThat(tableResult.collect().next().getKind()).isEqualTo(RowKind.INSERT);
 
         // start a batch scan job to verify contents in HBase table
         TableEnvironment batchEnv = TableEnvironment.create(batchSettings);
@@ -602,35 +588,36 @@ public class HBaseConnectorITCase extends HBaseTestBase {
                         .sorted()
                         .collect(Collectors.toList());
 
-        assertEquals(expected, result);
+        assertThat(result).isEqualTo(expected);
     }
 
     @Test
-    public void testHBaseLookupTableSource() {
+    void testHBaseLookupTableSource() {
         verifyHBaseLookupJoin(false);
     }
 
     @Test
-    public void testHBaseAsyncLookupTableSource() {
+    void testHBaseAsyncLookupTableSource() {
         verifyHBaseLookupJoin(true);
     }
 
     @Test
-    public void testTableInputFormatOpenClose() throws IOException {
+    void testTableInputFormatOpenClose() throws IOException {
         HBaseTableSchema tableSchema = new HBaseTableSchema();
         tableSchema.addColumn(FAMILY1, F1COL1, byte[].class);
         AbstractTableInputFormat<?> inputFormat =
                 new HBaseRowDataInputFormat(getConf(), TEST_TABLE_1, tableSchema, "null");
         inputFormat.open(inputFormat.createInputSplits(1)[0]);
-        assertNotNull(inputFormat.getConnection());
-        assertNotNull(inputFormat.getConnection().getTable(TableName.valueOf(TEST_TABLE_1)));
+        assertThat(inputFormat.getConnection()).isNotNull();
+        assertThat(inputFormat.getConnection().getTable(TableName.valueOf(TEST_TABLE_1)))
+                .isNotNull();
 
         inputFormat.close();
-        assertNull(inputFormat.getConnection());
+        assertThat(inputFormat.getConnection()).isNull();
     }
 
     @Test
-    public void testTableInputFormatTableExistence() throws IOException {
+    void testTableInputFormatTableExistence() throws IOException {
         HBaseTableSchema tableSchema = new HBaseTableSchema();
         tableSchema.addColumn(FAMILY1, F1COL1, byte[].class);
         AbstractTableInputFormat<?> inputFormat =
@@ -640,11 +627,11 @@ public class HBaseConnectorITCase extends HBaseTestBase {
                 .isExactlyInstanceOf(TableNotFoundException.class);
 
         inputFormat.close();
-        assertNull(inputFormat.getConnection());
+        assertThat(inputFormat.getConnection()).isNull();
     }
 
     @Test
-    public void testHBaseSinkFunctionTableExistence() throws Exception {
+    void testHBaseSinkFunctionTableExistence() throws Exception {
         org.apache.hadoop.conf.Configuration hbaseConf =
                 HBaseConfigurationUtil.getHBaseConfiguration();
         hbaseConf.set(HConstants.ZOOKEEPER_QUORUM, getZookeeperQuorum());
@@ -744,7 +731,7 @@ public class HBaseConnectorITCase extends HBaseTestBase {
         expected.add(
                 "+I[3, 3, 30, Hello-3, 300, 3.03, false, Welt-3, 2019-08-18T19:02, 2019-08-18, 19:02, 12345678.0003]");
 
-        assertEquals(expected, result);
+        assertThat(result).isEqualTo(expected);
     }
 
     // -------------------------------------------------------------------------------------
