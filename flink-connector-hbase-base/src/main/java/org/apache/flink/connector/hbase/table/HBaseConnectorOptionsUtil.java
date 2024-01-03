@@ -31,6 +31,7 @@ import org.apache.hadoop.hbase.HConstants;
 import java.util.Map;
 import java.util.Properties;
 
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.DYNAMIC_TABLE;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_INTERVAL;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_MAX_ROWS;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_MAX_SIZE;
@@ -92,6 +93,7 @@ public class HBaseConnectorOptionsUtil {
                 tableOptions.get(SINK_BUFFER_FLUSH_MAX_SIZE).getBytes());
         builder.setIgnoreNullValue(tableOptions.get(SINK_IGNORE_NULL_VALUE));
         builder.setParallelism(tableOptions.getOptional(SINK_PARALLELISM).orElse(null));
+        builder.setDynamicTable(tableOptions.get(DYNAMIC_TABLE));
         return builder.build();
     }
 

@@ -60,6 +60,12 @@ public class HBaseConnectorOptions {
                             "Representation for null values for string fields. HBase source and "
                                     + "sink encodes/decodes empty bytes as null values for all types except string type.");
 
+    public static final ConfigOption<Boolean> DYNAMIC_TABLE =
+            ConfigOptions.key("dynamic.table")
+                    .booleanType()
+                    .defaultValue(false)
+                    .withDescription("Whether to use dynamic table.");
+
     public static final ConfigOption<MemorySize> SINK_BUFFER_FLUSH_MAX_SIZE =
             ConfigOptions.key("sink.buffer-flush.max-size")
                     .memoryType()

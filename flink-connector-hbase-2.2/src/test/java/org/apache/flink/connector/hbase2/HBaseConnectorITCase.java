@@ -649,6 +649,7 @@ class HBaseConnectorITCase extends HBaseTestBase {
                                 tableSchema.convertToDataType(),
                                 Collections.emptyList(),
                                 "null",
+                                false,
                                 false),
                         2 * 1024 * 1024,
                         1000,

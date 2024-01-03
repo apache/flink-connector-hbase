@@ -43,23 +43,26 @@ public class RowDataToMutationConverter implements HBaseMutationConverter<RowDat
     private final TimestampMetadata timestampMetadata;
     private final TimeToLiveMetadata timeToLiveMetadata;
     private transient HBaseSerde serde;
+    private final boolean dynamicTable;
 
     public RowDataToMutationConverter(
             HBaseTableSchema schema,
             DataType physicalDataType,
             List<String> metadataKeys,
             String nullStringLiteral,
-            boolean ignoreNullValue) {
+            boolean ignoreNullValue,
+            boolean dynamicTable) {
         this.schema = schema;
         this.nullStringLiteral = nullStringLiteral;
         this.ignoreNullValue = ignoreNullValue;
         this.timestampMetadata = new TimestampMetadata(metadataKeys, physicalDataType);
         this.timeToLiveMetadata = new TimeToLiveMetadata(metadataKeys, physicalDataType);
+        this.dynamicTable = dynamicTable;
     }
 
     @Override
     public void open() {
-        this.serde = new HBaseSerde(schema, nullStringLiteral, ignoreNullValue);
+        this.serde = new HBaseSerde(schema, nullStringLiteral, ignoreNullValue, dynamicTable);
     }
 
     @Override
@@ -68,9 +71,13 @@ public class RowDataToMutationConverter implements HBaseMutationConverter<RowDat
         Long timeToLive = timeToLiveMetadata.read(record);
         RowKind kind = record.getRowKind();
         if (kind == RowKind.INSERT || kind == RowKind.UPDATE_AFTER) {
-            return serde.createPutMutation(record, timestamp, timeToLive);
+            return dynamicTable
+                    ? serde.createDynamicColumnPutMutation(record, timestamp, timeToLive)
+                    : serde.createPutMutation(record, timestamp, timeToLive);
         } else {
-            return serde.createDeleteMutation(record, timestamp);
+            return dynamicTable
+                    ? serde.createDynamicColumnDeleteMutation(record, timestamp)
+                    : serde.createDeleteMutation(record, timestamp);
         }
     }
 }

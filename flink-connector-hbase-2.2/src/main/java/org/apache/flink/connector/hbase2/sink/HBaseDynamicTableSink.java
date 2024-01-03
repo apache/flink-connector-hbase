@@ -79,7 +79,8 @@ public class HBaseDynamicTableSink implements DynamicTableSink, SupportsWritingM
                                 physicalDataType,
                                 metadataKeys,
                                 nullStringLiteral,
-                                writeOptions.isIgnoreNullValue()),
+                                writeOptions.isIgnoreNullValue(),
+                                writeOptions.isDynamicTable()),
                         writeOptions.getBufferFlushMaxSizeInBytes(),
                         writeOptions.getBufferFlushMaxRows(),
                         writeOptions.getBufferFlushIntervalMillis());

@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.DYNAMIC_TABLE;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.LOOKUP_ASYNC;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.LOOKUP_CACHE_MAX_ROWS;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.LOOKUP_CACHE_TTL;
@@ -121,6 +122,7 @@ public class HBase2DynamicTableFactory
         validatePrimaryKey(context.getPhysicalRowDataType(), context.getPrimaryKeyIndexes());
 
         String tableName = tableOptions.get(TABLE_NAME);
+        boolean dynamicTable = tableOptions.get(DYNAMIC_TABLE);
         Configuration hbaseConf = getHBaseConfiguration(tableOptions);
         HBaseWriteOptions hBaseWriteOptions = getHBaseWriteOptions(tableOptions);
         String nullStringLiteral = tableOptions.get(NULL_STRING_LITERAL);
@@ -151,6 +153,7 @@ public class HBase2DynamicTableFactory
         set.add(ZOOKEEPER_ZNODE_PARENT);
         set.add(ZOOKEEPER_QUORUM);
         set.add(NULL_STRING_LITERAL);
+        set.add(DYNAMIC_TABLE);
         set.add(SINK_BUFFER_FLUSH_MAX_SIZE);
         set.add(SINK_BUFFER_FLUSH_MAX_ROWS);
         set.add(SINK_BUFFER_FLUSH_INTERVAL);

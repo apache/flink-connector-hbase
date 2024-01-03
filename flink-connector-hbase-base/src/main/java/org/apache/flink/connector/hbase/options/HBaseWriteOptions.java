@@ -36,18 +36,21 @@ public class HBaseWriteOptions implements Serializable {
     private final long bufferFlushIntervalMillis;
     private final boolean ignoreNullValue;
     private final Integer parallelism;
+    private final boolean dynamicTable;
 
     private HBaseWriteOptions(
             long bufferFlushMaxSizeInBytes,
             long bufferFlushMaxMutations,
             long bufferFlushIntervalMillis,
             boolean ignoreNullValue,
-            Integer parallelism) {
+            Integer parallelism,
+            boolean dynamicTable) {
         this.bufferFlushMaxSizeInBytes = bufferFlushMaxSizeInBytes;
         this.bufferFlushMaxRows = bufferFlushMaxMutations;
         this.bufferFlushIntervalMillis = bufferFlushIntervalMillis;
         this.ignoreNullValue = ignoreNullValue;
         this.parallelism = parallelism;
+        this.dynamicTable = dynamicTable;
     }
 
     public long getBufferFlushMaxSizeInBytes() {
@@ -70,6 +73,10 @@ public class HBaseWriteOptions implements Serializable {
         return parallelism;
     }
 
+    public boolean isDynamicTable() {
+        return dynamicTable;
+    }
+
     @Override
     public String toString() {
         return "HBaseWriteOptions{"
@@ -83,6 +90,8 @@ public class HBaseWriteOptions implements Serializable {
                 + ignoreNullValue
                 + ", parallelism="
                 + parallelism
+                + ", dynamicTable="
+                + dynamicTable
                 + '}';
     }
 
@@ -124,6 +133,7 @@ public class HBaseWriteOptions implements Serializable {
         private long bufferFlushIntervalMillis = 0;
         private boolean ignoreNullValue;
         private Integer parallelism;
+        private boolean dynamicTable;
 
         /**
          * Optional. Sets when to flush a buffered request based on the memory size of rows
@@ -170,6 +180,12 @@ public class HBaseWriteOptions implements Serializable {
             return this;
         }
 
+        /** Optional. Sets whether to use dynamic table. Defaults to not set. */
+        public Builder setDynamicTable(boolean dynamicTable) {
+            this.dynamicTable = dynamicTable;
+            return this;
+        }
+
         /** Creates a new instance of {@link HBaseWriteOptions}. */
         public HBaseWriteOptions build() {
             return new HBaseWriteOptions(
@@ -177,7 +193,8 @@ public class HBaseWriteOptions implements Serializable {
                     bufferFlushMaxRows,
                     bufferFlushIntervalMillis,
                     ignoreNullValue,
-                    parallelism);
+                    parallelism,
+                    dynamicTable);
         }
     }
 }
