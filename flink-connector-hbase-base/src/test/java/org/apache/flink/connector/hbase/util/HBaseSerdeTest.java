@@ -81,27 +81,6 @@ class HBaseSerdeTest {
                         "+I(2,+I(20),+I(Hello-2,200),+I(2.02,true,Welt-2))");
     }
 
-    //    @Test
-    //    void convertToNewRowTestDynamicTable() {
-    //        DynamicHBaseSerde serde = createDynamicHBaseSerde(false);
-    //        List<List<Cell>> cellsList = prepareCells();
-    //        List<RowData> resultRowDatas = new ArrayList<>();
-    //        List<String> resultRowDataStr = new ArrayList<>();
-    //        for (List<Cell> cells : cellsList) {
-    //            RowData row = serde.
-    //            resultRowDatas.add(row);
-    //            resultRowDataStr.add(row.toString());
-    //        }
-    //
-    //        assertThat(resultRowDatas.get(0))
-    //                .as("RowData should not be reused")
-    //                .isNotSameAs(resultRowDatas.get(1));
-    //        assertThat(resultRowDataStr)
-    //                .containsExactly(
-    //                        "+I(1,+I(10),+I(Hello-1,100),+I(1.01,false,Welt-1))",
-    //                        "+I(2,+I(20),+I(Hello-2,200),+I(2.02,true,Welt-2))");
-    //    }
-
     @Test
     void convertToReusedRowTest() {
         HBaseSerde serde = createHBaseSerde(false);
@@ -166,16 +145,8 @@ class HBaseSerdeTest {
         return HBaseTableSchema.fromDataType(dataType);
     }
 
-    private HBaseTableSchema createDynamicHBaseTableSchema() {
-        DataType dataType =
-                ROW(
-                        FIELD(ROW_KEY, INT()),
-                        FIELD(FAMILY2, ROW(FIELD(F2COL1, STRING()), FIELD(F2COL2, BIGINT()))));
-        return HBaseTableSchema.fromDataType(dataType);
-    }
-
     private HBaseSerde createHBaseSerde(boolean writeIgnoreNullValue) {
-        return new HBaseSerde(createDynamicHBaseTableSchema(), "null", writeIgnoreNullValue, true);
+        return new HBaseSerde(createHBaseTableSchema(), "null", writeIgnoreNullValue, false);
     }
 
     private List<List<Cell>> prepareCells() {
