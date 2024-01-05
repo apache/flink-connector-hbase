@@ -32,6 +32,13 @@ under the License.
 	<name>Flink : Connectors : HBase Base</name>
 	<packaging>jar</packaging>
 
+	<properties>
+		<surefire.module.config> <!-- required by
+		Db2ExactlyOnceSinkE2eTest --> --add-opens=java.base/java.util=ALL-UNNAMED <!--
+		SimpleJdbcConnectionProviderDriverClassConcurrentLoadingITCase--> --add-opens=java.base/java.lang=ALL-UNNAMED
+		</surefire.module.config>
+	</properties>
+
 	<dependencies>
 		<!-- Core -->
 		<dependency>
