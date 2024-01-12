@@ -337,6 +337,58 @@ class HBaseConnectorITCase extends HBaseTestBase {
     }
 
     @Test
+    void testTableSinkWithWithDynamicTableAndTTLMetadata() throws Exception {
+        StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
+        StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
+
+        tEnv.executeSql(
+                "CREATE TABLE hTableForSink ("
+                        + " rowkey INT PRIMARY KEY NOT ENFORCED,"
+                        + " family1 ROW<col1 STRING, col2 INT>,"
+                        + " ttl BIGINT NOT NULL METADATA FROM 'ttl'"
+                        + ") WITH ("
+                        + " 'connector' = 'hbase-2.2',"
+                        + " 'table-name' = '"
+                        + TEST_TABLE_6
+                        + "',"
+                        + " 'dynamic.table' = 'true',"
+                        + " 'zookeeper.quorum' = '"
+                        + getZookeeperQuorum()
+                        + "'"
+                        + ")");
+
+        String insert = "INSERT INTO hTableForSink VALUES" + "(1, ROW('20240108',1),3000)";
+        tEnv.executeSql(insert).await();
+
+        tEnv.executeSql(
+                "CREATE TABLE hTableForQuery ("
+                        + " rowkey INT PRIMARY KEY NOT ENFORCED,"
+                        + " family1 ROW<`20240108` int>"
+                        + ") WITH ("
+                        + " 'connector' = 'hbase-2.2',"
+                        + " 'table-name' = '"
+                        + TEST_TABLE_6
+                        + "',"
+                        + " 'zookeeper.quorum' = '"
+                        + getZookeeperQuorum()
+                        + "'"
+                        + ")");
+
+        String query = "SELECT rowkey,family1.`20240108` FROM hTableForQuery";
+
+        TableResult firstResult = tEnv.executeSql(query);
+        List<Row> firstResults = CollectionUtil.iteratorToList(firstResult.collect());
+        String firstExpected = "+I[1, 1]\n";
+        TestBaseUtils.compareResultAsText(firstResults, firstExpected);
+
+        TimeUnit.SECONDS.sleep(5);
+
+        TableResult lastResult = tEnv.executeSql(query);
+        List<Row> lastResults = CollectionUtil.iteratorToList(lastResult.collect());
+        assertThat(lastResults).isEmpty();
+    }
+
+    @Test
     void testTableSinkWithChangelog() throws Exception {
         StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
