@@ -190,7 +190,7 @@ public class HBaseSerde {
      *
      * @return The appropriate instance of Put for this use case.
      */
-    public Put createDynamicColumnPutMutation(
+    public @Nullable Put createDynamicColumnPutMutation(
             RowData row, Long timestamp, @Nullable Long timeToLive) {
         checkArgument(keyEncoder != null, "row key is not set.");
         byte[] rowkey = keyEncoder.encode(row, rowkeyIndex);
@@ -200,6 +200,9 @@ public class HBaseSerde {
         }
         // upsert
         Put put = new Put(rowkey);
+        if (timeToLive != null) {
+            put.setTTL(timeToLive);
+        }
         for (int i = 0; i < fieldLength; i++) {
             if (i != rowkeyIndex) {
                 int f = i > rowkeyIndex ? i - 1 : i;
