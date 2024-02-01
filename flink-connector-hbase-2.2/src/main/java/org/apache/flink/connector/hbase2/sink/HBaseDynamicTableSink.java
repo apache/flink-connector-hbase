@@ -82,7 +82,8 @@ public class HBaseDynamicTableSink implements DynamicTableSink, SupportsWritingM
                                 writeOptions.isIgnoreNullValue()),
                         writeOptions.getBufferFlushMaxSizeInBytes(),
                         writeOptions.getBufferFlushMaxRows(),
-                        writeOptions.getBufferFlushIntervalMillis());
+                        writeOptions.getBufferFlushIntervalMillis(),
+                        writeOptions.isOverwriteKey());
         return SinkFunctionProvider.of(sinkFunction, writeOptions.getParallelism());
     }
 
