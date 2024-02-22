@@ -56,7 +56,7 @@ CREATE TABLE hTable (
  family3 ROW<q4 DOUBLE, q5 BOOLEAN, q6 STRING>,
  PRIMARY KEY (rowkey) NOT ENFORCED
 ) WITH (
- 'connector' = 'hbase-1.4',
+ 'connector' = 'hbase-2.2',
  'table-name' = 'mytable',
  'zookeeper.quorum' = 'localhost:2181'
 );
@@ -129,7 +129,6 @@ ON myTopic.key = hTable.rowkey;
       <td>String</td>
       <td>指定使用的连接器, 支持的值如下 :
         <ul>
-            <li><code>hbase-1.4</code>: 连接 HBase 1.4.x 集群</li>
             <li><code>hbase-2.2</code>: 连接 HBase 2.2.x 集群</li>
         </ul>
       </td>
