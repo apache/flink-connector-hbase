@@ -84,7 +84,7 @@ under the License.
 		<dependency>
 			<groupId>org.apache.hbase</groupId>
 			<artifactId>hbase-client</artifactId>
-			<version>${hbase1.version}</version>
+			<version>${hbase2.version}</version>
 			<exclusions>
 				<!-- Remove unneeded dependency, which is conflicting with our jetty-util version. -->
 				<exclusion>
@@ -162,7 +162,13 @@ under the License.
 			<scope>provided</scope>
 		</dependency>
 
-		<!-- ArchUit test dependencies -->
+		<!-- Test dependencies -->
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>31.1-jre</version>
+			<scope>test</scope>
+		</dependency>
 
 		<dependency>
 			<groupId>org.apache.flink</groupId>

@@ -64,7 +64,6 @@ under the License.
 		<commons.lang3.version>3.3.2</commons.lang3.version>
 		<commons.logging.version>1.1.3</commons.logging.version>
 		<hadoop.version>2.8.5</hadoop.version>
-		<hbase1.version>1.4.3</hbase1.version>
 		<hbase2.version>2.2.3</hbase2.version>
 		<httpclient.version>4.5.13</httpclient.version>
 		<httpcore.version>4.4.14</httpcore.version>
@@ -86,9 +85,7 @@ under the License.
 
 	<modules>
 		<module>flink-connector-hbase-base</module>
-		<module>flink-connector-hbase-1.4</module>
 		<module>flink-connector-hbase-2.2</module>
-		<module>flink-sql-connector-hbase-1.4</module>
 		<module>flink-sql-connector-hbase-2.2</module>
 		<module>flink-connector-hbase-e2e-tests</module>
 	</modules>
@@ -211,10 +208,6 @@ under the License.
 					<exclusion>
 						<groupId>commons-io</groupId>
 						<artifactId>commons-io</artifactId>
-					</exclusion>
-					<exclusion>
-						<groupId>commons-lang</groupId>
-						<artifactId>commons-lang</artifactId>
 					</exclusion>
 					<exclusion>
 						<groupId>org.apache.commons</groupId>
@@ -394,6 +387,12 @@ under the License.
 			</dependency>
 
 			<dependency>
+				<groupId>commons-lang</groupId>
+				<artifactId>commons-lang</artifactId>
+				<version>2.6</version>
+			</dependency>
+
+			<dependency>
 				<groupId>org.apache.commons</groupId>
 				<artifactId>commons-lang3</artifactId>
 				<version>${commons.lang3.version}</version>
@@ -418,11 +417,23 @@ under the License.
 			</dependency>
 
 			<dependency>
+				<groupId>org.apache.htrace</groupId>
+				<artifactId>htrace-core4</artifactId>
+				<version>4.2.0-incubating</version>
+			</dependency>
+
+			<dependency>
 				<groupId>com.fasterxml.jackson</groupId>
 				<artifactId>jackson-bom</artifactId>
 				<type>pom</type>
 				<scope>import</scope>
 				<version>${jackson.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.jruby.jcodings</groupId>
+				<artifactId>jcodings</artifactId>
+				<version>1.0.18</version>
 			</dependency>
 
 			<dependency>

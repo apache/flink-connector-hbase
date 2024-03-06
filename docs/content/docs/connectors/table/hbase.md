@@ -58,7 +58,7 @@ CREATE TABLE hTable (
  family3 ROW<q4 DOUBLE, q5 BOOLEAN, q6 STRING>,
  PRIMARY KEY (rowkey) NOT ENFORCED
 ) WITH (
- 'connector' = 'hbase-1.4',
+ 'connector' = 'hbase-2.2',
  'table-name' = 'mytable',
  'zookeeper.quorum' = 'localhost:2181'
 );
@@ -133,7 +133,6 @@ Connector Options
       <td>String</td>
       <td>Specify what connector to use, valid values are:
         <ul>
-            <li><code>hbase-1.4</code>: connect to HBase 1.4.x cluster</li>
             <li><code>hbase-2.2</code>: connect to HBase 2.2.x cluster</li>
         </ul>
       </td>

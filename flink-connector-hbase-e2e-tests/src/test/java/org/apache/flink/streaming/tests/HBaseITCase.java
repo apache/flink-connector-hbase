@@ -27,8 +27,7 @@ import org.apache.flink.util.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.Network;
 
@@ -52,6 +51,8 @@ import static org.testcontainers.shaded.org.hamcrest.Matchers.containsString;
 /** End to end HBase connector tests. */
 class HBaseITCase {
 
+    private static final String HBASE_VERSION = "2.2.3";
+    private static final String CONNECTOR_VERSION = "hbase-2.2";
     private static final String HBASE_E2E_SQL = "hbase_e2e.sql";
     private static final Path HADOOP_CP = ResourceTestUtils.getResource(".*hadoop.classpath");
     private static final Network NETWORK = Network.newNetwork();
@@ -85,10 +86,9 @@ class HBaseITCase {
         hbase.stop();
     }
 
-    @ParameterizedTest
-    @CsvSource({"1.4.3,hbase-1.4", "2.2.3,hbase-2.2"})
-    void test(String hbaseVersion, String connectorVersion) throws Exception {
-        hbase = new HBaseContainer(hbaseVersion).withNetwork(NETWORK).withNetworkAliases("hbase");
+    @Test
+    void test() throws Exception {
+        hbase = new HBaseContainer(HBASE_VERSION).withNetwork(NETWORK).withNetworkAliases("hbase");
 
         flink =
                 FlinkContainers.builder()
@@ -99,7 +99,7 @@ class HBaseITCase {
                                         .build())
                         .build();
 
-        connectorJar = ResourceTestUtils.getResource("sql-" + connectorVersion + ".jar");
+        connectorJar = ResourceTestUtils.getResource("sql-" + CONNECTOR_VERSION + ".jar");
 
         hbase.start();
         flink.start();
@@ -114,7 +114,7 @@ class HBaseITCase {
         hbase.putData("source", "row2", "family2", "f2c1", "v5");
         hbase.putData("source", "row2", "family2", "f2c2", "v6");
 
-        SQLJobSubmission jobSubmission = initSqlJobSubmission(connectorVersion);
+        SQLJobSubmission jobSubmission = initSqlJobSubmission();
         flink.submitSQLJob(jobSubmission);
         List<String> valueLines = getSinkResult();
 
@@ -155,8 +155,8 @@ class HBaseITCase {
                                 containsString("v6"))));
     }
 
-    private SQLJobSubmission initSqlJobSubmission(String connectorVersion) throws IOException {
-        List<String> sqlLines = loadSqlStatements(connectorVersion);
+    private SQLJobSubmission initSqlJobSubmission() throws IOException {
+        List<String> sqlLines = loadSqlStatements();
         return new SQLJobSubmission.SQLJobSubmissionBuilder(sqlLines)
                 .addJar(connectorJar)
                 .addJars(hadoopCpJars)
@@ -172,7 +172,7 @@ class HBaseITCase {
                 .collect(Collectors.toList());
     }
 
-    private static List<String> loadSqlStatements(String connectorVersion) throws IOException {
+    private static List<String> loadSqlStatements() throws IOException {
         try (InputStream is =
                 HBaseITCase.class.getClassLoader().getResourceAsStream(HBASE_E2E_SQL)) {
             if (is == null) {
@@ -182,7 +182,7 @@ class HBaseITCase {
             List<String> lines = IOUtils.readLines(is, StandardCharsets.UTF_8);
 
             return lines.stream()
-                    .map(line -> line.replace("$HBASE_CONNECTOR", connectorVersion))
+                    .map(line -> line.replace("$HBASE_CONNECTOR", CONNECTOR_VERSION))
                     .collect(Collectors.toList());
         }
     }
