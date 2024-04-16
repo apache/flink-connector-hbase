@@ -22,14 +22,34 @@ import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.planner.utils.StreamTableTestUtil;
 import org.apache.flink.table.planner.utils.TableTestBase;
 
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.rules.TestName;
 
-import static org.apache.flink.core.testutils.FlinkMatchers.containsCause;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** Plan tests for HBase connector, for example, testing projection push down. */
 public class HBaseTablePlanTest extends TableTestBase {
 
     private final StreamTableTestUtil util = streamTestUtil(TableConfig.getDefault());
+
+    private TestInfo testInfo;
+
+    @BeforeEach
+    public void setup(TestInfo testInfo) {
+        this.testInfo = testInfo;
+    }
+
+    // A workaround to get the test method name for Flink versions not completely migrated to JUnit5
+    public TestName name() {
+        return new TestName() {
+            @Override
+            public String getMethodName() {
+                return testInfo.getTestMethod().get().getName();
+            }
+        };
+    }
 
     @Test
     public void testMultipleRowKey() {
@@ -45,11 +65,10 @@ public class HBaseTablePlanTest extends TableTestBase {
                                 + " 'table-name' = 'my_table',"
                                 + " 'zookeeper.quorum' = 'localhost:2021'"
                                 + ")");
-        thrown().expect(
-                        containsCause(
-                                new IllegalArgumentException(
-                                        "Row key can't be set multiple times.")));
-        util.verifyExecPlan("SELECT * FROM hTable");
+
+        assertThatThrownBy(() -> util.verifyExecPlan("SELECT * FROM hTable"))
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Row key can't be set multiple times.");
     }
 
     @Test
@@ -64,13 +83,13 @@ public class HBaseTablePlanTest extends TableTestBase {
                                 + " 'table-name' = 'my_table',"
                                 + " 'zookeeper.quorum' = 'localhost:2021'"
                                 + ")");
-        thrown().expect(
-                        containsCause(
-                                new IllegalArgumentException(
-                                        "HBase table requires to define a row key field. "
-                                                + "A row key field is defined as an atomic type, "
-                                                + "column families and qualifiers are defined as ROW type.")));
-        util.verifyExecPlan("SELECT * FROM hTable");
+
+        assertThatThrownBy(() -> util.verifyExecPlan("SELECT * FROM hTable"))
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage(
+                        "HBase table requires to define a row key field. "
+                                + "A row key field is defined as an atomic type, "
+                                + "column families and qualifiers are defined as ROW type.");
     }
 
     @Test
@@ -87,13 +106,13 @@ public class HBaseTablePlanTest extends TableTestBase {
                                 + " 'table-name' = 'my_table',"
                                 + " 'zookeeper.quorum' = 'localhost:2021'"
                                 + ")");
-        thrown().expect(
-                        containsCause(
-                                new IllegalArgumentException(
-                                        "Primary key of HBase table must be defined on the row key field. "
-                                                + "A row key field is defined as an atomic type, "
-                                                + "column families and qualifiers are defined as ROW type.")));
-        util.verifyExecPlan("SELECT * FROM hTable");
+
+        assertThatThrownBy(() -> util.verifyExecPlan("SELECT * FROM hTable"))
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage(
+                        "Primary key of HBase table must be defined on the row key field. "
+                                + "A row key field is defined as an atomic type, "
+                                + "column families and qualifiers are defined as ROW type.");
     }
 
     @Test
@@ -111,11 +130,10 @@ public class HBaseTablePlanTest extends TableTestBase {
                                 + " 'table-name' = 'my_table',"
                                 + " 'zookeeper.quorum' = 'localhost:2021'"
                                 + ")");
-        thrown().expect(
-                        containsCause(
-                                new IllegalArgumentException(
-                                        "Unsupported field type 'ARRAY<STRING>' for HBase.")));
-        util.verifyExecPlan("SELECT * FROM hTable");
+
+        assertThatThrownBy(() -> util.verifyExecPlan("SELECT * FROM hTable"))
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("Unsupported field type 'ARRAY<STRING>' for HBase.");
     }
 
     @Test
