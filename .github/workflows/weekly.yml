@@ -19,7 +19,7 @@
 # We need to specify repo related information here since Apache INFRA doesn't differentiate
 # between several workflows with the same names while preparing a report for GHA usage
 # https://infra-reports.apache.org/#ghactions
-name: Weekly Flink Connector HBase
+name: Weekly Flink Connector HBase CI
 on:
   schedule:
     - cron: "0 0 * * 0"
@@ -30,28 +30,23 @@ jobs:
     strategy:
       matrix:
         flink_branches: [{
-          flink: 1.16.3,
-          branch: v3.0
+          flink: 1.19-SNAPSHOT,
+          branch: main
+        }, {
+          flink: 1.18-SNAPSHOT,
+          branch: main
         }, {
           flink: 1.17.2,
           branch: v3.0
         }, {
-          flink: 1.16-SNAPSHOT,
-          branch: main
-        }, {
-          flink: 1.17-SNAPSHOT,
-          branch: main
-        },{
-          flink: 1.18-SNAPSHOT,
-          branch: main
-        }, {
-          flink: 1.19-SNAPSHOT,
-          branch: main
+          flink: 1.16.3,
+          branch: v3.0
         }]
     uses: apache/flink-connector-shared-utils/.github/workflows/ci.yml@ci_utils
     with:
       flink_version: ${{ matrix.flink_branches.flink }}
       connector_branch: ${{ matrix.flink_branches.branch }}
+      jdk_version: ${{ matrix.flink_branches.jdk || '8, 11' }}
       run_dependency_convergence: false
       timeout_global: 120
       timeout_test: 80
