@@ -97,7 +97,7 @@ public class HBaseRowDataLookupFunction extends LookupFunction {
                 if (get != null) {
                     Result result = table.get(get);
                     if (!result.isEmpty()) {
-                        return Collections.singletonList(serde.convertToReusedRow(result));
+                        return Collections.singletonList(serde.convertToNewRow(result));
                     }
                 }
                 break;
