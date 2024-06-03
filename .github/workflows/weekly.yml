@@ -19,7 +19,7 @@
 # We need to specify repo related information here since Apache INFRA doesn't differentiate
 # between several workflows with the same names while preparing a report for GHA usage
 # https://infra-reports.apache.org/#ghactions
-name: Weekly Flink Connector HBase
+name: Weekly Flink Connector HBase CI
 on:
   schedule:
     - cron: "0 0 * * 0"
@@ -35,12 +35,6 @@ jobs:
         }, {
           flink: 1.17.2,
           branch: v3.0
-        }, {
-          flink: 1.16-SNAPSHOT,
-          branch: main
-        }, {
-          flink: 1.17-SNAPSHOT,
-          branch: main
         },{
           flink: 1.18-SNAPSHOT,
           branch: main
