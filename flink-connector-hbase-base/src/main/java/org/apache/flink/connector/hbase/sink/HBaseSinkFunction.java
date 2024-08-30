@@ -209,6 +209,8 @@ public class HBaseSinkFunction<T> extends RichSinkFunction<T>
         if (bufferFlushMaxMutations > 0
                 && numPendingRequests.incrementAndGet() >= bufferFlushMaxMutations) {
             flush();
+        } else if (bufferFlushMaxMutations == 0 && bufferFlushMaxSizeInBytes == 0) {
+            flush();
         }
     }
 
