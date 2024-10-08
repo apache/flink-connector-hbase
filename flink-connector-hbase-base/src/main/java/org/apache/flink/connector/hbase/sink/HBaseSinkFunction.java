@@ -113,6 +113,22 @@ public class HBaseSinkFunction<T> extends RichSinkFunction<T>
         this.overwriteKey = overwriteKey;
     }
 
+    public HBaseSinkFunction(
+            String hTableName,
+            org.apache.hadoop.conf.Configuration conf,
+            HBaseMutationConverter<T> mutationConverter,
+            long bufferFlushMaxSizeInBytes,
+            long bufferFlushMaxMutations,
+            long bufferFlushIntervalMillis) {
+        this.hTableName = hTableName;
+        // Configuration is not serializable
+        this.serializedConfig = HBaseConfigurationUtil.serializeConfiguration(conf);
+        this.mutationConverter = mutationConverter;
+        this.bufferFlushMaxSizeInBytes = bufferFlushMaxSizeInBytes;
+        this.bufferFlushMaxMutations = bufferFlushMaxMutations;
+        this.bufferFlushIntervalMillis = bufferFlushIntervalMillis;
+    }
+
     @Override
     public void open(Configuration parameters) throws Exception {
         LOG.info("start open ...");
