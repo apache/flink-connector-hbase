@@ -16,7 +16,7 @@
 # limitations under the License.
 ################################################################################
 
-version: 3.0.0
+version: 4.0.0
 variants:
   - maven: flink-connector-hbase-2.2
     sql_url: https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-hbase-2.2/$full_version/flink-sql-connector-hbase-2.2-$full_version.jar
