@@ -52,7 +52,7 @@ under the License.
 	</scm>
 
 	<properties>
-		<flink.version>1.19.1</flink.version>
+		<flink.version>1.20.0</flink.version>
 
 		<scala.binary.version>2.12</scala.binary.version>
 		<scala.version>2.12.7</scala.version>
