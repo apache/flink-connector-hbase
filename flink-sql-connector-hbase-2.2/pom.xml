@@ -141,9 +141,13 @@ under the License.
 									<shadedPattern>org.apache.flink.hbase.shaded.org.apache.hadoop.hbase</shadedPattern>
 									<!-- HBase client uses shaded KeyValueCodec to encode data and put the class name in
  										the header of request, the HBase region server can not load the shaded
-										KeyValueCodec class when decode the data, so we exclude them here. -->
+										KeyValueCodec class when decode the data, so we exclude them here.
+										Some exceptions also required to keep their original package because the region
+										server sends it that way, and otherwise the client will not recognize it.-->
 									<excludes>
 										<exclude>org.apache.hadoop.hbase.codec.*</exclude>
+										<exclude>org.apache.hadoop.hbase.NotServingRegionException</exclude>
+										<exclude>org.apache.hadoop.hbase.exceptions.RegionMovedException</exclude>
 									</excludes>
 								</relocation>
 							</relocations>
