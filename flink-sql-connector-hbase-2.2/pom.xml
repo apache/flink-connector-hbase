@@ -144,6 +144,8 @@ under the License.
 										KeyValueCodec class when decode the data, so we exclude them here. -->
 									<excludes>
 										<exclude>org.apache.hadoop.hbase.codec.*</exclude>
+										<exclude>org/apache/hadoop/hbase/NotServingRegionException</exclude>
+										<exclude>org/apache/hadoop/hbase/exceptions/RegionMovedException</exclude>
 									</excludes>
 								</relocation>
 							</relocations>
