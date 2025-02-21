@@ -35,6 +35,7 @@ public class HBaseWriteOptions implements Serializable {
     private final long bufferFlushMaxRows;
     private final long bufferFlushIntervalMillis;
     private final boolean ignoreNullValue;
+    private boolean overwriteKey;
     private final Integer parallelism;
 
     private HBaseWriteOptions(
@@ -42,11 +43,13 @@ public class HBaseWriteOptions implements Serializable {
             long bufferFlushMaxMutations,
             long bufferFlushIntervalMillis,
             boolean ignoreNullValue,
+            boolean overwriteKey,
             Integer parallelism) {
         this.bufferFlushMaxSizeInBytes = bufferFlushMaxSizeInBytes;
         this.bufferFlushMaxRows = bufferFlushMaxMutations;
         this.bufferFlushIntervalMillis = bufferFlushIntervalMillis;
         this.ignoreNullValue = ignoreNullValue;
+        this.overwriteKey = overwriteKey;
         this.parallelism = parallelism;
     }
 
@@ -66,6 +69,10 @@ public class HBaseWriteOptions implements Serializable {
         return ignoreNullValue;
     }
 
+    public boolean isOverwriteKey() {
+        return overwriteKey;
+    }
+
     public Integer getParallelism() {
         return parallelism;
     }
@@ -81,6 +88,8 @@ public class HBaseWriteOptions implements Serializable {
                 + bufferFlushIntervalMillis
                 + ", ignoreNullValue="
                 + ignoreNullValue
+                + ", overwriteKey="
+                + overwriteKey
                 + ", parallelism="
                 + parallelism
                 + '}';
@@ -99,6 +108,7 @@ public class HBaseWriteOptions implements Serializable {
                 && bufferFlushMaxRows == that.bufferFlushMaxRows
                 && bufferFlushIntervalMillis == that.bufferFlushIntervalMillis
                 && ignoreNullValue == that.ignoreNullValue
+                && overwriteKey == that.overwriteKey
                 && parallelism == that.parallelism;
     }
 
@@ -123,6 +133,7 @@ public class HBaseWriteOptions implements Serializable {
         private long bufferFlushMaxRows = 0;
         private long bufferFlushIntervalMillis = 0;
         private boolean ignoreNullValue;
+        private boolean overwriteKey;
         private Integer parallelism;
 
         /**
@@ -160,6 +171,12 @@ public class HBaseWriteOptions implements Serializable {
             return this;
         }
 
+        /** Optional. Writing option, If necessary,delete this key first before adding new data. */
+        public Builder setOverwriteKey(boolean overwriteKey) {
+            this.overwriteKey = overwriteKey;
+            return this;
+        }
+
         /**
          * Optional. Defines the parallelism of the HBase sink operator. By default, the parallelism
          * is determined by the framework using the same parallelism of the upstream chained
@@ -177,6 +194,7 @@ public class HBaseWriteOptions implements Serializable {
                     bufferFlushMaxRows,
                     bufferFlushIntervalMillis,
                     ignoreNullValue,
+                    overwriteKey,
                     parallelism);
         }
     }

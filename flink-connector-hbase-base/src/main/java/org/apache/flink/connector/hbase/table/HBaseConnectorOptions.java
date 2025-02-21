@@ -94,6 +94,14 @@ public class HBaseConnectorOptions {
                     .defaultValue(false)
                     .withDescription("Writing option, whether ignore null value or not.");
 
+    public static final ConfigOption<Boolean> SINK_OVERWRITE_KEY =
+            ConfigOptions.key("sink.overwrite-key")
+                    .booleanType()
+                    .defaultValue(false)
+                    .withDescription(
+                            "Writing option, Do you want to overwrite this key? If necessary, "
+                                    + "delete this key first before adding new data.");
+
     public static final ConfigOption<Boolean> LOOKUP_ASYNC =
             ConfigOptions.key("lookup.async")
                     .booleanType()

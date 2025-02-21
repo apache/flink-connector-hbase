@@ -656,7 +656,8 @@ class HBaseConnectorITCase extends HBaseTestBase {
                                 false),
                         2 * 1024 * 1024,
                         1000,
-                        1000);
+                        1000,
+                        false);
 
         assertThatThrownBy(() -> sinkFunction.open(new Configuration()))
                 .getRootCause()
