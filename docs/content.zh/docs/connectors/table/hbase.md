@@ -56,7 +56,7 @@ CREATE TABLE hTable (
  family3 ROW<q4 DOUBLE, q5 BOOLEAN, q6 STRING>,
  PRIMARY KEY (rowkey) NOT ENFORCED
 ) WITH (
- 'connector' = 'hbase-2.2',
+ 'connector' = 'hbase-2.6',
  'table-name' = 'mytable',
  'zookeeper.quorum' = 'localhost:2181'
 );
@@ -129,7 +129,7 @@ ON myTopic.key = hTable.rowkey;
       <td>String</td>
       <td>指定使用的连接器, 支持的值如下 :
         <ul>
-            <li><code>hbase-2.2</code>: 连接 HBase 2.2.x 集群</li>
+            <li><code>hbase-2.6</code>: 连接 HBase 2.6.x 集群</li>
         </ul>
       </td>
     </tr>
@@ -204,7 +204,7 @@ ON myTopic.key = hTable.rowkey;
       <td>可选</td>
       <td style="word-wrap: break-word;">false</td>
       <td>Boolean</td>
-      <td>是否启用异步查找。如果为真，查找将是异步的。注意：异步方式只支持 hbase-2.2 连接器</td>
+      <td>是否启用异步查找。如果为真，查找将是异步的。注意：异步方式只支持 hbase-2.6 连接器</td>
     </tr>
     <tr>
       <td><h5>lookup.cache</h5></td>
