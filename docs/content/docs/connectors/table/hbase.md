@@ -170,37 +170,78 @@ Connector Options
       <td>Representation for null values for string fields. HBase source and sink encodes/decodes empty bytes as null values for all types except string type.</td>
     </tr>
     <tr>
-      <td><h5>sink.buffer-flush.max-size</h5></td>
+      <td><h5>sink.flush-buffer.size</h5></td>
       <td>optional</td>
       <td>yes</td>
-      <td style="word-wrap: break-word;">2mb</td>
-      <td>MemorySize</td>
+      <td style="word-wrap: break-word;">2097152</td>
+      <td>Long</td>
       <td>Writing option, maximum size in memory of buffered rows for each writing request.
       This can improve performance for writing data to HBase database, but may increase the latency.
-      Can be set to <code>'0'</code> to disable it.
       </td>
     </tr>
     <tr>
-      <td><h5>sink.buffer-flush.max-rows</h5></td>
+      <td><h5>sink.batch.max-size</h5></td>
       <td>optional</td>
       <td>yes</td>
       <td style="word-wrap: break-word;">1000</td>
       <td>Integer</td>
       <td>Writing option, maximum number of rows to buffer for each writing request.
       This can improve performance for writing data to HBase database, but may increase the latency.
-      Can be set to <code>'0'</code> to disable it.
       </td>
     </tr>
     <tr>
-      <td><h5>sink.buffer-flush.interval</h5></td>
+      <td><h5>sink.flush-buffer.timeout</h5></td>
       <td>optional</td>
       <td>yes</td>
-      <td style="word-wrap: break-word;">1s</td>
-      <td>Duration</td>
-      <td>Writing option, the interval to flush any buffered rows.
+      <td style="word-wrap: break-word;">1000</td>
+      <td>Long</td>
+      <td>Writing option, the threshold time in milliseconds for an element to be in the buffer before flushing out.
       This can improve performance for writing data to HBase database, but may increase the latency.
-      Can be set to <code>'0'</code> to disable it. Note, both <code>'sink.buffer-flush.max-size'</code> and <code>'sink.buffer-flush.max-rows'</code>
-      can be set to <code>'0'</code> with the flush interval set allowing for complete async processing of buffered actions.
+      </td>
+    </tr>
+    <tr>
+      <td><h5>sink.requests.max-inflight</h5></td>
+      <td>optional</td>
+      <td>yes</td>
+      <td style="word-wrap: break-word;">1000</td>
+      <td>Integer</td>
+      <td>Request threshold for uncompleted requests before blocking new write requests.
+      </td>
+    </tr>
+    <tr>
+      <td><h5>sink.requests.max-buffered</h5></td>
+      <td>optional</td>
+      <td>yes</td>
+      <td style="word-wrap: break-word;">1000</td>
+      <td>Integer</td>
+      <td>Maximum number of buffered records before applying backpressure.
+      </td>
+    </tr>
+    <tr>
+      <td><h5>sink.request-timeout</h5></td>
+      <td>optional</td>
+      <td>yes</td>
+      <td style="word-wrap: break-word;">10 min</td>
+      <td>Duration</td>
+      <td>The maximum time to wait for a batch of HBase requests to complete before timing out.
+      </td>
+    </tr>
+    <tr>
+      <td><h5>sink.fail-on-timeout</h5></td>
+      <td>optional</td>
+      <td>yes</td>
+      <td style="word-wrap: break-word;">false</td>
+      <td>Boolean</td>
+      <td>Whether to fail the job when a request times out. If false, timed-out requests will be logged but the job will continue processing. If true, a timeout will cause the job to fail.
+      </td>
+    </tr>
+    <tr>
+      <td><h5>sink.max-record-size</h5></td>
+      <td>optional</td>
+      <td>yes</td>
+      <td style="word-wrap: break-word;">1048576</td>
+      <td>Long</td>
+      <td>The maximum size in bytes of a single record. Records bigger than this will cause the job to fail.
       </td>
     </tr>
     <tr>

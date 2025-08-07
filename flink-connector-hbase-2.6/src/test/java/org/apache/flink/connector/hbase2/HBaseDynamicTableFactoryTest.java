@@ -19,7 +19,6 @@
 package org.apache.flink.connector.hbase2;
 
 import org.apache.flink.api.common.typeinfo.Types;
-import org.apache.flink.connector.hbase.options.HBaseWriteOptions;
 import org.apache.flink.connector.hbase.source.HBaseRowDataLookupFunction;
 import org.apache.flink.connector.hbase.util.HBaseConfigurationUtil;
 import org.apache.flink.connector.hbase.util.HBaseTableSchema;
@@ -30,7 +29,7 @@ import org.apache.flink.core.testutils.FlinkAssertions;
 import org.apache.flink.table.catalog.Column;
 import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.connector.sink.DynamicTableSink;
-import org.apache.flink.table.connector.sink.SinkFunctionProvider;
+import org.apache.flink.table.connector.sink.SinkV2Provider;
 import org.apache.flink.table.connector.source.DynamicTableSource;
 import org.apache.flink.table.connector.source.LookupTableSource;
 import org.apache.flink.table.connector.source.lookup.AsyncLookupFunctionProvider;
@@ -41,7 +40,6 @@ import org.apache.flink.table.functions.LookupFunction;
 import org.apache.flink.table.runtime.connector.sink.SinkRuntimeProviderContext;
 import org.apache.flink.table.runtime.connector.source.LookupRuntimeProviderContext;
 
-import org.apache.commons.collections.IteratorUtils;
 import org.apache.hadoop.hbase.HConstants;
 import org.junit.jupiter.api.Test;
 
@@ -49,6 +47,20 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.apache.flink.connector.base.table.AsyncSinkConnectorOptions.FLUSH_BUFFER_SIZE;
+import static org.apache.flink.connector.base.table.AsyncSinkConnectorOptions.FLUSH_BUFFER_TIMEOUT;
+import static org.apache.flink.connector.base.table.AsyncSinkConnectorOptions.MAX_BATCH_SIZE;
+import static org.apache.flink.connector.base.table.AsyncSinkConnectorOptions.MAX_BUFFERED_REQUESTS;
+import static org.apache.flink.connector.base.table.AsyncSinkConnectorOptions.MAX_IN_FLIGHT_REQUESTS;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.LOOKUP_ASYNC;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_INTERVAL;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_MAX_ROWS;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_MAX_SIZE;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_FAIL_ON_TIMEOUT;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_IGNORE_NULL_VALUE;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_MAX_RECORD_SIZE;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_PARALLELISM;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_REQUEST_TIMEOUT;
 import static org.apache.flink.table.api.DataTypes.BIGINT;
 import static org.apache.flink.table.api.DataTypes.BOOLEAN;
 import static org.apache.flink.table.api.DataTypes.DATE;
@@ -60,6 +72,12 @@ import static org.apache.flink.table.api.DataTypes.ROW;
 import static org.apache.flink.table.api.DataTypes.STRING;
 import static org.apache.flink.table.api.DataTypes.TIME;
 import static org.apache.flink.table.api.DataTypes.TIMESTAMP;
+import static org.apache.flink.table.connector.source.lookup.LookupOptions.CACHE_TYPE;
+import static org.apache.flink.table.connector.source.lookup.LookupOptions.MAX_RETRIES;
+import static org.apache.flink.table.connector.source.lookup.LookupOptions.PARTIAL_CACHE_CACHE_MISSING_KEY;
+import static org.apache.flink.table.connector.source.lookup.LookupOptions.PARTIAL_CACHE_EXPIRE_AFTER_ACCESS;
+import static org.apache.flink.table.connector.source.lookup.LookupOptions.PARTIAL_CACHE_EXPIRE_AFTER_WRITE;
+import static org.apache.flink.table.connector.source.lookup.LookupOptions.PARTIAL_CACHE_MAX_ROWS;
 import static org.apache.flink.table.factories.utils.FactoryMocks.createTableSink;
 import static org.apache.flink.table.factories.utils.FactoryMocks.createTableSource;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -112,7 +130,7 @@ class HBaseDynamicTableFactoryTest {
                 ((LookupFunctionProvider) lookupProvider).createLookupFunction();
         assertThat(tableFunction).isInstanceOf(HBaseRowDataLookupFunction.class);
         assertThat(((HBaseRowDataLookupFunction) tableFunction).getHTableName())
-                .isEqualTo("testHBastTable");
+                .isEqualTo("testHBaseTable");
 
         HBaseTableSchema hbaseSchema = hbaseSource.getHBaseTableSchema();
         assertThat(hbaseSchema.getRowKeyIndex()).isEqualTo(2);
@@ -135,12 +153,12 @@ class HBaseDynamicTableFactoryTest {
     void testLookupOptions() {
         ResolvedSchema schema = ResolvedSchema.of(Column.physical(ROWKEY, STRING()));
         Map<String, String> options = getAllOptions();
-        options.put("lookup.cache", "PARTIAL");
-        options.put("lookup.partial-cache.expire-after-access", "15213s");
-        options.put("lookup.partial-cache.expire-after-write", "18213s");
-        options.put("lookup.partial-cache.max-rows", "10000");
-        options.put("lookup.partial-cache.cache-missing-key", "false");
-        options.put("lookup.max-retries", "15513");
+        options.put(CACHE_TYPE.key(), "PARTIAL");
+        options.put(PARTIAL_CACHE_EXPIRE_AFTER_ACCESS.key(), "15213s");
+        options.put(PARTIAL_CACHE_EXPIRE_AFTER_WRITE.key(), "18213s");
+        options.put(PARTIAL_CACHE_MAX_ROWS.key(), "10000");
+        options.put(PARTIAL_CACHE_CACHE_MISSING_KEY.key(), "false");
+        options.put(MAX_RETRIES.key(), "15513");
 
         DynamicTableSource source = createTableSource(schema, options);
         HBaseDynamicTableSource hbaseSource = (HBaseDynamicTableSource) source;
@@ -176,9 +194,9 @@ class HBaseDynamicTableFactoryTest {
 
         DynamicTableSink sink = createTableSink(schema, getAllOptions());
         assertThat(sink).isInstanceOf(HBaseDynamicTableSink.class);
-        HBaseDynamicTableSink hbaseSink = (HBaseDynamicTableSink) sink;
+        HBaseDynamicTableSink actualSink = (HBaseDynamicTableSink) sink;
 
-        HBaseTableSchema hbaseSchema = hbaseSink.getHBaseTableSchema();
+        HBaseTableSchema hbaseSchema = actualSink.getHBaseTableSchema();
         assertThat(hbaseSchema.getRowKeyIndex()).isZero();
         assertThat(hbaseSchema.getRowKeyDataType()).contains(STRING());
 
@@ -200,68 +218,104 @@ class HBaseDynamicTableFactoryTest {
         expectedConfiguration.set(HConstants.ZOOKEEPER_ZNODE_PARENT, "/flink");
         expectedConfiguration.set("hbase.security.authentication", "kerberos");
 
-        org.apache.hadoop.conf.Configuration actualConfiguration = hbaseSink.getConfiguration();
-
-        assertThat(IteratorUtils.toList(actualConfiguration.iterator()))
-                .isEqualTo(IteratorUtils.toList(expectedConfiguration.iterator()));
-
         // verify tableName
-        assertThat(hbaseSink.getTableName()).isEqualTo("testHBastTable");
+        assertThat(actualSink.getTableName()).isEqualTo("testHBaseTable");
 
-        HBaseWriteOptions expectedWriteOptions =
-                HBaseWriteOptions.builder()
-                        .setBufferFlushMaxRows(1000)
-                        .setBufferFlushIntervalMillis(1000)
-                        .setBufferFlushMaxSizeInBytes(2 * 1024 * 1024)
-                        .build();
-        HBaseWriteOptions actualWriteOptions = hbaseSink.getWriteOptions();
-        assertThat(actualWriteOptions).isEqualTo(expectedWriteOptions);
+        HBaseDynamicTableSink expectedSink =
+                (HBaseDynamicTableSink)
+                        HBaseDynamicTableSink.builder()
+                                .setPhysicalDataType(schema.toPhysicalRowDataType())
+                                .setConfiguration(expectedConfiguration)
+                                .build();
+        assertThat(actualSink)
+                .usingRecursiveComparison()
+                .comparingOnlyFields("configuration")
+                .isEqualTo(expectedSink);
     }
 
     @Test
-    void testBufferFlushOptions() {
+    void testAsyncOptions() {
         Map<String, String> options = getAllOptions();
-        options.put("sink.buffer-flush.max-size", "10mb");
-        options.put("sink.buffer-flush.max-rows", "100");
-        options.put("sink.buffer-flush.interval", "10s");
+        options.put(MAX_BATCH_SIZE.key(), "100");
+        options.put(MAX_IN_FLIGHT_REQUESTS.key(), "62");
+        options.put(MAX_BUFFERED_REQUESTS.key(), "72");
+        options.put(FLUSH_BUFFER_SIZE.key(), String.valueOf(10 * 1024 * 1024));
+        options.put(FLUSH_BUFFER_TIMEOUT.key(), "10000");
+        options.put(SINK_REQUEST_TIMEOUT.key(), "5 s");
+        options.put(SINK_FAIL_ON_TIMEOUT.key(), "true");
+        options.put(SINK_IGNORE_NULL_VALUE.key(), "true");
+        options.put(SINK_MAX_RECORD_SIZE.key(), "6123");
 
         ResolvedSchema schema = ResolvedSchema.of(Column.physical(ROWKEY, STRING()));
 
-        DynamicTableSink sink = createTableSink(schema, options);
-        HBaseWriteOptions expected =
-                HBaseWriteOptions.builder()
-                        .setBufferFlushMaxRows(100)
-                        .setBufferFlushIntervalMillis(10 * 1000)
-                        .setBufferFlushMaxSizeInBytes(10 * 1024 * 1024)
-                        .build();
-        HBaseWriteOptions actual = ((HBaseDynamicTableSink) sink).getWriteOptions();
-        assertThat(actual).isEqualTo(expected);
+        DynamicTableSink actualSink = createTableSink(schema, options);
+
+        HBaseDynamicTableSink expectedSink =
+                (HBaseDynamicTableSink)
+                        HBaseDynamicTableSink.builder()
+                                .setMaxBatchSize(100)
+                                .setMaxInFlightRequests(62)
+                                .setMaxBufferedRequests(72)
+                                .setMaxBufferSizeInBytes(10 * 1024 * 1024)
+                                .setMaxTimeInBufferMS(10 * 1000)
+                                .setRequestTimeoutMS(5L * 1000L)
+                                .setMaxRecordSizeInBytes(6123L)
+                                .setFailOnTimeout(true)
+                                .setIgnoreNullValue(true)
+                                .setPhysicalDataType(schema.toPhysicalRowDataType())
+                                .build();
+        assertThat(actualSink)
+                .usingRecursiveComparison()
+                .comparingOnlyFields(
+                        "maxBatchSize",
+                        "maxInFlightRequests",
+                        "maxBufferedRequests",
+                        "maxBufferSizeInBytes",
+                        "maxTimeInBufferMS",
+                        "requestTimeoutMS",
+                        "maxRecordSizeInBytes",
+                        "failOnTimeout",
+                        "ignoreNullValue")
+                .isEqualTo(expectedSink);
     }
 
     @Test
-    void testSinkIgnoreNullValueOptions() {
+    void testDeprecatedAsyncOptions() {
         Map<String, String> options = getAllOptions();
-        options.put("sink.ignore-null-value", "true");
+        options.put(SINK_BUFFER_FLUSH_MAX_SIZE.key(), "5");
+        options.put(SINK_BUFFER_FLUSH_MAX_ROWS.key(), "6");
+        options.put(SINK_BUFFER_FLUSH_INTERVAL.key(), "7");
 
         ResolvedSchema schema = ResolvedSchema.of(Column.physical(ROWKEY, STRING()));
 
-        DynamicTableSink sink = createTableSink(schema, options);
-        HBaseWriteOptions actual = ((HBaseDynamicTableSink) sink).getWriteOptions();
-        assertThat(actual.isIgnoreNullValue()).isTrue();
+        DynamicTableSink actualSink = createTableSink(schema, options);
+
+        HBaseDynamicTableSink expectedSink =
+                (HBaseDynamicTableSink)
+                        HBaseDynamicTableSink.builder()
+                                .setMaxBufferSizeInBytes(5)
+                                .setMaxBatchSize(6)
+                                .setMaxTimeInBufferMS(7L)
+                                .setPhysicalDataType(schema.toPhysicalRowDataType())
+                                .build();
+        assertThat(actualSink)
+                .usingRecursiveComparison()
+                .comparingOnlyFields("maxBufferSizeInBytes", "maxBatchSize", "maxTimeInBufferMS")
+                .isEqualTo(expectedSink);
     }
 
     @Test
     void testParallelismOptions() {
         Map<String, String> options = getAllOptions();
-        options.put("sink.parallelism", "2");
+        options.put(SINK_PARALLELISM.key(), "2");
 
         ResolvedSchema schema = ResolvedSchema.of(Column.physical(ROWKEY, STRING()));
 
         DynamicTableSink sink = createTableSink(schema, options);
         assertThat(sink).isInstanceOf(HBaseDynamicTableSink.class);
         HBaseDynamicTableSink hbaseSink = (HBaseDynamicTableSink) sink;
-        SinkFunctionProvider provider =
-                (SinkFunctionProvider)
+        SinkV2Provider provider =
+                (SinkV2Provider)
                         hbaseSink.getSinkRuntimeProvider(new SinkRuntimeProviderContext(false));
         assertThat(provider.getParallelism()).contains(2);
     }
@@ -269,7 +323,7 @@ class HBaseDynamicTableFactoryTest {
     @Test
     void testLookupAsync() {
         Map<String, String> options = getAllOptions();
-        options.put("lookup.async", "true");
+        options.put(LOOKUP_ASYNC.key(), "true");
         ResolvedSchema schema =
                 ResolvedSchema.of(
                         Column.physical(ROWKEY, STRING()),
@@ -287,27 +341,7 @@ class HBaseDynamicTableFactoryTest {
                 ((AsyncLookupFunctionProvider) lookupProvider).createAsyncLookupFunction();
         assertThat(asyncTableFunction).isInstanceOf(HBaseRowDataAsyncLookupFunction.class);
         assertThat(((HBaseRowDataAsyncLookupFunction) asyncTableFunction).getHTableName())
-                .isEqualTo("testHBastTable");
-    }
-
-    @Test
-    void testDisabledBufferFlushOptions() {
-        Map<String, String> options = getAllOptions();
-        options.put("sink.buffer-flush.max-size", "0");
-        options.put("sink.buffer-flush.max-rows", "0");
-        options.put("sink.buffer-flush.interval", "0");
-
-        ResolvedSchema schema = ResolvedSchema.of(Column.physical(ROWKEY, STRING()));
-
-        DynamicTableSink sink = createTableSink(schema, options);
-        HBaseWriteOptions expected =
-                HBaseWriteOptions.builder()
-                        .setBufferFlushMaxRows(0)
-                        .setBufferFlushIntervalMillis(0)
-                        .setBufferFlushMaxSizeInBytes(0)
-                        .build();
-        HBaseWriteOptions actual = ((HBaseDynamicTableSink) sink).getWriteOptions();
-        assertThat(actual).isEqualTo(expected);
+                .isEqualTo("testHBaseTable");
     }
 
     @Test
@@ -367,7 +401,7 @@ class HBaseDynamicTableFactoryTest {
     private Map<String, String> getAllOptions() {
         Map<String, String> options = new HashMap<>();
         options.put("connector", "hbase-2.6");
-        options.put("table-name", "testHBastTable");
+        options.put("table-name", "testHBaseTable");
         options.put("zookeeper.quorum", "localhost:2181");
         options.put("zookeeper.znode.parent", "/flink");
         options.put("properties.hbase.security.authentication", "kerberos");

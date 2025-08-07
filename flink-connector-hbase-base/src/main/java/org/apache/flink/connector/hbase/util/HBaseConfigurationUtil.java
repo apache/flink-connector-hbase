@@ -40,8 +40,6 @@ public class HBaseConfigurationUtil {
 
     private static final Logger LOG = LoggerFactory.getLogger(HBaseConfigurationUtil.class);
 
-    public static final String ENV_HBASE_CONF_DIR = "HBASE_CONF_DIR";
-
     public static Configuration getHBaseConfiguration() {
 
         // Instantiate an HBaseConfiguration to load the hbase-default.xml and hbase-site.xml from
@@ -176,40 +174,5 @@ public class HBaseConfigurationUtil {
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
         DataInputStream dataInputStream = new DataInputStream(byteArrayInputStream);
         writable.readFields(dataInputStream);
-    }
-
-    public static org.apache.hadoop.conf.Configuration createHBaseConf() {
-        org.apache.hadoop.conf.Configuration hbaseClientConf = HBaseConfiguration.create();
-
-        String hbaseConfDir = System.getenv(ENV_HBASE_CONF_DIR);
-
-        if (hbaseConfDir != null) {
-            if (new File(hbaseConfDir).exists()) {
-                String coreSite = hbaseConfDir + "/core-site.xml";
-                String hdfsSite = hbaseConfDir + "/hdfs-site.xml";
-                String hbaseSite = hbaseConfDir + "/hbase-site.xml";
-                if (new File(coreSite).exists()) {
-                    hbaseClientConf.addResource(new org.apache.hadoop.fs.Path(coreSite));
-                    LOG.info("Adding " + coreSite + " to hbase configuration");
-                }
-                if (new File(hdfsSite).exists()) {
-                    hbaseClientConf.addResource(new org.apache.hadoop.fs.Path(hdfsSite));
-                    LOG.info("Adding " + hdfsSite + " to hbase configuration");
-                }
-                if (new File(hbaseSite).exists()) {
-                    hbaseClientConf.addResource(new org.apache.hadoop.fs.Path(hbaseSite));
-                    LOG.info("Adding " + hbaseSite + " to hbase configuration");
-                }
-            } else {
-                LOG.warn(
-                        "HBase config directory '{}' not found, cannot load HBase configuration.",
-                        hbaseConfDir);
-            }
-        } else {
-            LOG.warn(
-                    "{} env variable not found, cannot load HBase configuration.",
-                    ENV_HBASE_CONF_DIR);
-        }
-        return hbaseClientConf;
     }
 }
