@@ -59,7 +59,7 @@ under the License.
 
 		<dependency>
 			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-connector-hbase-2.2</artifactId>
+			<artifactId>flink-connector-hbase-2.6</artifactId>
 			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>
@@ -74,83 +74,9 @@ under the License.
 					<groupId>net.minidev</groupId>
 					<artifactId>json-smart</artifactId>
 				</exclusion>
-			</exclusions>
-		</dependency>
-
-		<dependency>
-			<groupId>org.apache.hadoop</groupId>
-			<artifactId>hadoop-yarn-client</artifactId>
-			<version>${hadoop.version}</version>
-			<scope>test</scope>
-			<exclusions>
 				<exclusion>
-					<groupId>log4j</groupId>
-					<artifactId>log4j</artifactId>
-				</exclusion>
-				<exclusion>
-					<!-- This dependency is no longer shipped with the JDK since Java 9.-->
-					<groupId>jdk.tools</groupId>
-					<artifactId>jdk.tools</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>ch.qos.reload4j</groupId>
-					<artifactId>reload4j</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>slf4j-reload4j</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
-		<dependency>
-			<groupId>org.apache.hadoop</groupId>
-			<artifactId>hadoop-yarn-api</artifactId>
-			<version>${hadoop.version}</version>
-			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<!-- This dependency is no longer shipped with the JDK since Java 9.-->
-					<groupId>jdk.tools</groupId>
-					<artifactId>jdk.tools</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>ch.qos.reload4j</groupId>
-					<artifactId>reload4j</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>slf4j-reload4j</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
-		<dependency>
-			<groupId>org.apache.hadoop</groupId>
-			<artifactId>hadoop-minicluster</artifactId>
-			<version>${hadoop.version}</version>
-			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>net.minidev</groupId>
-					<artifactId>json-smart</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
-		<dependency>
-			<groupId>org.apache.hadoop</groupId>
-			<artifactId>hadoop-minikdc</artifactId>
-			<version>${minikdc.version}</version>
-			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>slf4j-log4j12</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>slf4j-reload4j</artifactId>
+					<groupId>ch.qos.logback</groupId>
+					<artifactId>*</artifactId>
 				</exclusion>
 			</exclusions>
 		</dependency>
@@ -187,9 +113,9 @@ under the License.
 							<artifactItems>
 								<artifactItem>
 									<groupId>org.apache.flink</groupId>
-									<artifactId>flink-sql-connector-hbase-2.2</artifactId>
+									<artifactId>flink-sql-connector-hbase-2.6</artifactId>
 									<version>${project.version}</version>
-									<destFileName>sql-hbase-2.2.jar</destFileName>
+									<destFileName>sql-hbase-2.6.jar</destFileName>
 									<type>jar</type>
 									<outputDirectory>${project.build.directory}/dependencies</outputDirectory>
 								</artifactItem>
@@ -204,7 +130,8 @@ under the License.
 						</goals>
 						<configuration>
 							<outputFile>${project.build.directory}/hadoop.classpath</outputFile>
-							<excludeGroupIds>org.apache.flink</excludeGroupIds>
+							<excludeGroupIds>org.apache.flink,org.apache.hbase,org.apache.zookeeper,io.netty</excludeGroupIds>
+							<includeScope>test</includeScope>
 						</configuration>
 					</execution>
 				</executions>

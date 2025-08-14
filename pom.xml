@@ -52,18 +52,19 @@ under the License.
 	</scm>
 
 	<properties>
-		<flink.version>1.20.0</flink.version>
+		<flink.version>1.20.2</flink.version>
 
 		<scala.binary.version>2.12</scala.binary.version>
 		<scala.version>2.12.7</scala.version>
 
+		<mockito.version>4.11.0</mockito.version>
 		<assertj.version>3.21.0</assertj.version>
 		<commons.codec.version>1.15</commons.codec.version>
 		<commons.io.version>2.11.0</commons.io.version>
 		<commons.lang3.version>3.3.2</commons.lang3.version>
 		<commons.logging.version>1.1.3</commons.logging.version>
-		<hadoop.version>2.8.5</hadoop.version>
-		<hbase2.version>2.2.3</hbase2.version>
+		<hadoop.version>2.10.2</hadoop.version>
+		<hbase2.version>2.6.3</hbase2.version>
 		<httpclient.version>4.5.13</httpclient.version>
 		<httpcore.version>4.4.14</httpcore.version>
 		<jackson.version>2.13.4.20221013</jackson.version>
@@ -72,11 +73,22 @@ under the License.
 		<junit5.version>5.8.1</junit5.version>
 		<kryo.verison>2.24.0</kryo.verison>
 		<minikdc.version>3.2.4</minikdc.version>
-		<netty.version>4.1.70.Final</netty.version>
-		<zookeeper.version>3.4.14</zookeeper.version>
+		<zookeeper.version>3.8.4</zookeeper.version>
+		<snappy.java.version>1.1.10.4</snappy.java.version>
+		<yetus.audience.annotations.version>0.13.0</yetus.audience.annotations.version>
+		<woodstox.stax2.api.version>4.2.1</woodstox.stax2.api.version>
 
 		<slf4j.version>1.7.36</slf4j.version>
 		<log4j.version>2.17.2</log4j.version>
+
+		<flink.connector.module.config>
+			--add-opens=java.base/java.util=ALL-UNNAMED
+			--add-opens=java.base/java.lang=ALL-UNNAMED
+			--add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+		</flink.connector.module.config>
+		<flink.surefire.baseArgLine>-XX:+UseG1GC -Xms256m -XX:+IgnoreUnrecognizedVMOptions
+			${flink.connector.module.config}
+		</flink.surefire.baseArgLine>
 
 		<!-- For directory plugin -->
 		<flink.parent.artifactId>flink-connector-hbase-parent</flink.parent.artifactId>
@@ -84,8 +96,8 @@ under the License.
 
 	<modules>
 		<module>flink-connector-hbase-base</module>
-		<module>flink-connector-hbase-2.2</module>
-		<module>flink-sql-connector-hbase-2.2</module>
+		<module>flink-connector-hbase-2.6</module>
+		<module>flink-sql-connector-hbase-2.6</module>
 		<module>flink-connector-hbase-e2e-tests</module>
 	</modules>
 
@@ -367,7 +379,6 @@ under the License.
 			</dependency>
 
 			<dependency>
-				<!-- HBase only works with Zookeper 3.4 -->
 				<groupId>org.apache.zookeeper</groupId>
 				<artifactId>zookeeper</artifactId>
 				<version>${zookeeper.version}</version>
@@ -385,12 +396,6 @@ under the License.
 				<groupId>org.scala-lang</groupId>
 				<artifactId>scala-library</artifactId>
 				<version>${scala.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>io.netty</groupId>
-				<artifactId>netty-all</artifactId>
-				<version>${netty.version}</version>
 			</dependency>
 
 			<dependency>
@@ -525,9 +530,27 @@ under the License.
 			</dependency>
 
 			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-core</artifactId>
+				<version>${mockito.version}</version>
+			</dependency>
+
+			<dependency>
 				<groupId>org.xerial.snappy</groupId>
 				<artifactId>snappy-java</artifactId>
-				<version>1.1.10.4</version>
+				<version>${snappy.java.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.yetus</groupId>
+				<artifactId>audience-annotations</artifactId>
+				<version>${yetus.audience.annotations.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.codehaus.woodstox</groupId>
+				<artifactId>stax2-api</artifactId>
+				<version>${woodstox.stax2.api.version}</version>
 			</dependency>
 			<!-- End of dependencies for dependency convergence -->
 		</dependencies>

@@ -40,16 +40,19 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
         return new ImageFromDockerfile()
                 .withDockerfileFromBuilder(
                         builder ->
-                                builder.from("adoptopenjdk/openjdk8")
+                                builder.from("eclipse-temurin:17-jdk-jammy")
                                         .env("HBASE_VERSION", hbaseVersion)
                                         .run(
                                                 "export INITRD=no"
-                                                        + " && export HBASE_DIST=\"http://archive.apache.org/dist/hbase\""
-                                                        + " && apt-get update -y"
-                                                        + " && apt-get install -y --no-install-recommends curl"
+                                                        + " && export HBASE_DIST=\"https://dlcdn.apache.org/hbase\""
                                                         + " && cd /opt"
                                                         + " && curl -SL $HBASE_DIST/$HBASE_VERSION/hbase-$HBASE_VERSION-bin.tar.gz"
-                                                        + " | tar -x -z && mv hbase-${HBASE_VERSION} hbase")
+                                                        + " | tar -x -z && mv hbase-${HBASE_VERSION} hbase"
+                                                        + " && echo \"<configuration>"
+                                                        + "<property><name>hbase.zookeeper.property.clientPortAddress</name><value>0.0.0.0</value></property>"
+                                                        + "<property><name>hbase.zookeeper.quorum</name><value>0.0.0.0</value></property>"
+                                                        + "<property><name>hbase.unsafe.stream.capability.enforce</name><value>false</value></property>"
+                                                        + "</configuration>\" > hbase/conf/hbase-site.xml")
                                         .expose(2181)
                                         .cmd(
                                                 "/bin/sh",

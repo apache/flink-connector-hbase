@@ -51,8 +51,8 @@ import static org.testcontainers.shaded.org.hamcrest.Matchers.containsString;
 /** End to end HBase connector tests. */
 class HBaseITCase {
 
-    private static final String HBASE_VERSION = "2.2.3";
-    private static final String CONNECTOR_VERSION = "hbase-2.2";
+    private static final String HBASE_VERSION = "2.6.3";
+    private static final String CONNECTOR_VERSION = "hbase-2.6";
     private static final String HBASE_E2E_SQL = "hbase_e2e.sql";
     private static final Path HADOOP_CP = ResourceTestUtils.getResource(".*hadoop.classpath");
     private static final Network NETWORK = Network.newNetwork();

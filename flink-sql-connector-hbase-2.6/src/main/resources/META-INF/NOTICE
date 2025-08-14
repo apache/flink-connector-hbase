@@ -1,0 +1,29 @@
+flink-sql-connector-hbase-2.6
+Copyright 2014-2025 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+This project bundles the following dependencies under the Apache Software License 2.0. (http://www.apache.org/licenses/LICENSE-2.0.txt)
+
+ - commons-codec:commons-codec:1.15
+ - io.dropwizard.metrics:metrics-core:3.2.6
+ - org.apache.commons:commons-crypto:1.1.0
+ - org.apache.commons:commons-lang3:3.3.2
+ - org.apache.hbase:hbase-client:2.6.3
+ - org.apache.hbase:hbase-common:2.6.3
+ - org.apache.hbase:hbase-protocol:2.6.3
+ - org.apache.hbase:hbase-protocol-shaded:2.6.3
+ - org.apache.hbase:hbase-logging:2.6.3
+ - org.apache.hbase.thirdparty:hbase-unsafe:4.1.11
+ - org.apache.hbase.thirdparty:hbase-shaded-protobuf:4.1.11
+ - org.apache.hbase.thirdparty:hbase-shaded-miscellaneous:4.1.11
+ - org.apache.hbase.thirdparty:hbase-shaded-netty:4.1.11
+ - org.apache.hbase.thirdparty:hbase-shaded-gson:4.1.11
+ - org.apache.zookeeper:zookeeper:3.8.4
+ - org.apache.zookeeper:zookeeper-jute:3.8.4
+
+The bundled Apache HBase Patched & Relocated (Shaded) Protobuf org.apache.hbase.thirdparty:hbase-shaded-protobuf
+dependency bundles the following dependencies under the BSD license. See bundled license files for details.
+
+ - com.google.protobuf:protobuf-java:2.5.0
