@@ -2,8 +2,8 @@ package org.apache.flink.connector.hbase.sink;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.connector.base.sink.writer.ResultHandler;
+import org.apache.flink.connector.hbase.util.SerializableMutation;
 import org.apache.flink.metrics.Counter;
-import org.apache.flink.util.Preconditions;
 
 import org.apache.hadoop.hbase.DoNotRetryIOException;
 import org.apache.hadoop.hbase.client.Mutation;
@@ -13,10 +13,14 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static org.apache.flink.util.Preconditions.checkArgument;
 
 /**
  * This class is responsible for managing the async calls to HBase and managing the {@link
@@ -47,34 +51,47 @@ public class HBaseWriterAsyncHandler {
             List<CompletableFuture<Mutation>> futures,
             List<SerializableMutation> processedMutationsInOrder,
             ResultHandler<SerializableMutation> resultHandler) {
-        Preconditions.checkArgument(
+        checkArgument(
                 futures.size() == processedMutationsInOrder.size(),
                 "Different number of HBase futures was supplied than mutations.");
 
-        ConcurrentLinkedQueue<FailedMutation> failedMutations = new ConcurrentLinkedQueue<>();
+        Queue<FailedMutation> failedMutations = new ConcurrentLinkedQueue<>();
 
         // Handle each future separately and store failures.
-        CompletableFuture<?>[] handledFutures = new CompletableFuture[futures.size()];
-        for (int i = 0; i < futures.size(); i++) {
-            final int index = i;
-            handledFutures[index] =
-                    futures.get(index)
-                            .exceptionally(
-                                    throwable -> {
-                                        failedMutations.add(
-                                                new FailedMutation(
-                                                        processedMutationsInOrder.get(index),
-                                                        throwable));
-                                        return null;
-                                    });
-        }
+        CompletableFuture<?>[] handledFutures =
+                IntStream.range(0, futures.size())
+                        .mapToObj(
+                                i ->
+                                        addFailedCallback(
+                                                futures.get(i),
+                                                failedMutations,
+                                                processedMutationsInOrder.get(i)))
+                        .toArray(CompletableFuture[]::new);
 
         // Exceptions are already handled here, so it's safe to use `thenRun()`.
         CompletableFuture.allOf(handledFutures)
-                .thenRun(
-                        () -> {
-                            handleFailedRequests(failedMutations, resultHandler);
-                        });
+                .thenRun(() -> handleFailedRequests(failedMutations, resultHandler));
+    }
+
+    /**
+     * For a {@link CompletableFuture} HBase write future, return a new future that adds a {@link
+     * FailedMutation} to the failedMutations queue to mark that write as failed.
+     *
+     * @param cf future of a mutation write
+     * @param failedMutations queue of failed mutations to add a new entry to upon failure
+     * @param mutation the actual mutation that's being written by the future
+     * @return new future with the exception callback
+     */
+    private CompletableFuture<Mutation> addFailedCallback(
+            CompletableFuture<Mutation> cf,
+            Queue<FailedMutation> failedMutations,
+            SerializableMutation mutation) {
+
+        return cf.exceptionally(
+                throwable -> {
+                    failedMutations.add(new FailedMutation(mutation, throwable));
+                    return null;
+                });
     }
 
     /**

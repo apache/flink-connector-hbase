@@ -1,6 +1,8 @@
-package org.apache.flink.connector.hbase.sink;
+package org.apache.flink.connector.hbase.util;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.connector.hbase.sink.HBaseSink;
+import org.apache.flink.connector.hbase.sink.HBaseWriter;
 
 import org.apache.hadoop.hbase.client.Mutation;
 
@@ -14,7 +16,7 @@ import java.io.Serializable;
 public class SerializableMutation implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private transient Mutation mutation;
+    private final transient Mutation mutation;
 
     public SerializableMutation(Mutation mutation) {
         this.mutation = mutation;

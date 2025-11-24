@@ -1,4 +1,4 @@
-package org.apache.flink.connector.hbase.sink;
+package org.apache.flink.connector.hbase.util;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.connector.sink2.Sink;

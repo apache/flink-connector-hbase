@@ -1,6 +1,7 @@
 package org.apache.flink.connector.hbase.sink;
 
 import org.apache.flink.connector.base.sink.writer.ResultHandler;
+import org.apache.flink.connector.hbase.util.SerializableMutation;
 import org.apache.flink.metrics.Counter;
 
 import org.apache.hadoop.hbase.DoNotRetryIOException;

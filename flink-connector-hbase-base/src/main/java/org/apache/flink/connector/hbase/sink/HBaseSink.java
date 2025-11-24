@@ -7,6 +7,7 @@ import org.apache.flink.connector.base.sink.AsyncSinkBase;
 import org.apache.flink.connector.base.sink.writer.BufferedRequestState;
 import org.apache.flink.connector.base.sink.writer.ElementConverter;
 import org.apache.flink.connector.hbase.util.HBaseConfigurationUtil;
+import org.apache.flink.connector.hbase.util.SerializableMutation;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 
 import org.apache.hadoop.conf.Configuration;

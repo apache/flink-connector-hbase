@@ -3,6 +3,8 @@ package org.apache.flink.connector.hbase.sink;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.connector.base.sink.AsyncSinkBaseBuilder;
 import org.apache.flink.connector.base.sink.writer.ElementConverter;
+import org.apache.flink.connector.hbase.util.SerializableMutation;
+import org.apache.flink.connector.hbase.util.WrappedElementConverter;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Mutation;
