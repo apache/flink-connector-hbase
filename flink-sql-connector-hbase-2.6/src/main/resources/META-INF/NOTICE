@@ -15,11 +15,11 @@ This project bundles the following dependencies under the Apache Software Licens
  - org.apache.hbase:hbase-protocol:2.6.4
  - org.apache.hbase:hbase-protocol-shaded:2.6.4
  - org.apache.hbase:hbase-logging:2.6.4
- - org.apache.hbase.thirdparty:hbase-unsafe:4.1.11
- - org.apache.hbase.thirdparty:hbase-shaded-protobuf:4.1.11
- - org.apache.hbase.thirdparty:hbase-shaded-miscellaneous:4.1.11
- - org.apache.hbase.thirdparty:hbase-shaded-netty:4.1.11
- - org.apache.hbase.thirdparty:hbase-shaded-gson:4.1.11
+ - org.apache.hbase.thirdparty:hbase-unsafe:4.1.12
+ - org.apache.hbase.thirdparty:hbase-shaded-protobuf:4.1.12
+ - org.apache.hbase.thirdparty:hbase-shaded-miscellaneous:4.1.12
+ - org.apache.hbase.thirdparty:hbase-shaded-netty:4.1.12
+ - org.apache.hbase.thirdparty:hbase-shaded-gson:4.1.12
  - org.apache.zookeeper:zookeeper:3.8.4
  - org.apache.zookeeper:zookeeper-jute:3.8.4
 
