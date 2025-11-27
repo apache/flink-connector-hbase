@@ -64,12 +64,14 @@ public class HBaseSinkBuilder<InputT>
     private static final Long DEFAULT_MAX_RECORD_SIZE_IN_BYTES = 1024L * 1024L;
     private static final Long DEFAULT_MAX_REQUEST_TIMEOUT_MS = 60L * 1000L;
     private static final Boolean DEFAULT_FAIL_ON_TIMEOUT = false;
+    private static final Long DEFAULT_MAX_RECORD_WRITE_ATTEMPTS = 0L;
 
     private String tableName;
     private Configuration configuration;
     private ElementConverter<InputT, SerializableMutation> elementConverter;
     private Long requestTimeoutMS = null;
     private Boolean failOnTimeout = null;
+    private Long maxRecordWriteAttempts = null;
 
     public HBaseSinkBuilder() {}
 
@@ -90,6 +92,11 @@ public class HBaseSinkBuilder<InputT>
 
     public HBaseSinkBuilder<InputT> setFailOnTimeout(Boolean failOnTimeout) {
         this.failOnTimeout = failOnTimeout;
+        return this;
+    }
+
+    public HBaseSinkBuilder<InputT> setMaxRecordWriteAttempts(Long maxRecordWriteAttempts) {
+        this.maxRecordWriteAttempts = maxRecordWriteAttempts;
         return this;
     }
 
@@ -120,6 +127,8 @@ public class HBaseSinkBuilder<InputT>
                         .orElse(DEFAULT_MAX_RECORD_SIZE_IN_BYTES),
                 Optional.ofNullable(requestTimeoutMS).orElse(DEFAULT_MAX_REQUEST_TIMEOUT_MS),
                 Optional.ofNullable(failOnTimeout).orElse(DEFAULT_FAIL_ON_TIMEOUT),
+                Optional.ofNullable(maxRecordWriteAttempts)
+                        .orElse(DEFAULT_MAX_RECORD_WRITE_ATTEMPTS),
                 tableName,
                 configuration);
     }

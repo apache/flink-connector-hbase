@@ -59,6 +59,7 @@ import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_FAIL_ON_TIMEOUT;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_IGNORE_NULL_VALUE;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_MAX_RECORD_SIZE;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_MAX_RECORD_WRITE_ATTEMPTS;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_PARALLELISM;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_REQUEST_TIMEOUT;
 import static org.apache.flink.table.api.DataTypes.BIGINT;
@@ -243,6 +244,7 @@ class HBaseDynamicTableFactoryTest {
         options.put(FLUSH_BUFFER_TIMEOUT.key(), "10000");
         options.put(SINK_REQUEST_TIMEOUT.key(), "5 s");
         options.put(SINK_FAIL_ON_TIMEOUT.key(), "true");
+        options.put(SINK_MAX_RECORD_WRITE_ATTEMPTS.key(), "12345");
         options.put(SINK_IGNORE_NULL_VALUE.key(), "true");
         options.put(SINK_MAX_RECORD_SIZE.key(), "6123");
 
@@ -261,6 +263,7 @@ class HBaseDynamicTableFactoryTest {
                                 .setRequestTimeoutMS(5L * 1000L)
                                 .setMaxRecordSizeInBytes(6123L)
                                 .setFailOnTimeout(true)
+                                .setMaxRecordWriteAttempts(12345L)
                                 .setIgnoreNullValue(true)
                                 .setPhysicalDataType(schema.toPhysicalRowDataType())
                                 .build();
@@ -275,6 +278,7 @@ class HBaseDynamicTableFactoryTest {
                         "requestTimeoutMS",
                         "maxRecordSizeInBytes",
                         "failOnTimeout",
+                        "maxRecordWriteAttempts",
                         "ignoreNullValue")
                 .isEqualTo(expectedSink);
     }

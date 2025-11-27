@@ -53,6 +53,7 @@ public class HBaseDynamicTableSink extends AsyncDynamicTableSink<SerializableMut
     private final Long maxRecordSizeInBytes;
     private final Long requestTimeoutMS;
     private final Boolean failOnTimeout;
+    private final Long maxRecordWriteAttempts;
     private final String tableName;
     private final HBaseTableSchema hbaseTableSchema;
     private final Configuration configuration;
@@ -77,6 +78,7 @@ public class HBaseDynamicTableSink extends AsyncDynamicTableSink<SerializableMut
             Long maxRecordSizeInBytes,
             Long requestTimeoutMS,
             Boolean failOnTimeout,
+            Long maxRecordWriteAttempts,
             Integer parallelism,
             Boolean ignoreNullValue,
             String tableName,
@@ -92,6 +94,7 @@ public class HBaseDynamicTableSink extends AsyncDynamicTableSink<SerializableMut
         this.maxRecordSizeInBytes = maxRecordSizeInBytes;
         this.requestTimeoutMS = requestTimeoutMS;
         this.failOnTimeout = failOnTimeout;
+        this.maxRecordWriteAttempts = maxRecordWriteAttempts;
         this.parallelism = parallelism;
         this.ignoreNullValue = ignoreNullValue;
         this.tableName = tableName;
@@ -118,6 +121,7 @@ public class HBaseDynamicTableSink extends AsyncDynamicTableSink<SerializableMut
                         .setMaxRecordSizeInBytes(maxRecordSizeInBytes)
                         .setRequestTimeoutMS(requestTimeoutMS)
                         .setFailOnTimeout(failOnTimeout)
+                        .setMaxRecordWriteAttempts(maxRecordWriteAttempts)
                         .setElementConverter(elementConverter);
         addAsyncOptionsToSinkBuilder(builder);
         return SinkV2Provider.of(builder.build(), parallelism);
@@ -156,6 +160,7 @@ public class HBaseDynamicTableSink extends AsyncDynamicTableSink<SerializableMut
                 requestTimeoutMS,
                 maxRecordSizeInBytes,
                 failOnTimeout,
+                maxRecordWriteAttempts,
                 parallelism,
                 ignoreNullValue,
                 tableName,
@@ -194,6 +199,7 @@ public class HBaseDynamicTableSink extends AsyncDynamicTableSink<SerializableMut
         private Long maxRecordSizeInBytes = null;
         private Long requestTimeoutMS = null;
         private Boolean failOnTimeout = null;
+        private Long maxRecordWriteAttempts = null;
         private String tableName = null;
         private Configuration configuration = null;
         private String nullStringLiteral = null;
@@ -212,6 +218,7 @@ public class HBaseDynamicTableSink extends AsyncDynamicTableSink<SerializableMut
                     maxRecordSizeInBytes,
                     requestTimeoutMS,
                     failOnTimeout,
+                    maxRecordWriteAttempts,
                     parallelism,
                     ignoreNullValue,
                     tableName,
@@ -232,6 +239,11 @@ public class HBaseDynamicTableSink extends AsyncDynamicTableSink<SerializableMut
 
         public HBaseDynamicSinkBuilder setFailOnTimeout(Boolean failOnTimeout) {
             this.failOnTimeout = failOnTimeout;
+            return this;
+        }
+
+        public HBaseDynamicSinkBuilder setMaxRecordWriteAttempts(Long maxRecordWriteAttempts) {
+            this.maxRecordWriteAttempts = maxRecordWriteAttempts;
             return this;
         }
 

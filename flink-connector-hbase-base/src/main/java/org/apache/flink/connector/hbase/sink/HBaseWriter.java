@@ -69,6 +69,7 @@ public class HBaseWriter<InputT> extends AsyncSinkWriter<InputT, SerializableMut
             long maxRecordSizeInBytes,
             long requestTimeoutMS,
             boolean failOnTimeout,
+            long maxRecordWriteAttempts,
             String tableName,
             Configuration configuration) {
         super(
@@ -92,7 +93,8 @@ public class HBaseWriter<InputT> extends AsyncSinkWriter<InputT, SerializableMut
         this.table = connection.getTable(TableName.valueOf(tableName));
         this.metrics = context.metricGroup();
         this.numRecordsOutErrorsCounter = metrics.getNumRecordsOutErrorsCounter();
-        this.hBaseWriterAsyncHandler = new HBaseWriterAsyncHandler(numRecordsOutErrorsCounter);
+        this.hBaseWriterAsyncHandler =
+                new HBaseWriterAsyncHandler(numRecordsOutErrorsCounter, maxRecordWriteAttempts);
     }
 
     public HBaseWriter(
@@ -107,6 +109,7 @@ public class HBaseWriter<InputT> extends AsyncSinkWriter<InputT, SerializableMut
             long maxRecordSizeInBytes,
             long requestTimeoutMS,
             boolean failOnTimeout,
+            long maxRecordWriteAttempts,
             String tableName,
             Configuration configuration) {
         super(
@@ -130,7 +133,8 @@ public class HBaseWriter<InputT> extends AsyncSinkWriter<InputT, SerializableMut
         this.table = connection.getTable(TableName.valueOf(tableName));
         this.metrics = context.metricGroup();
         this.numRecordsOutErrorsCounter = metrics.getNumRecordsOutErrorsCounter();
-        this.hBaseWriterAsyncHandler = new HBaseWriterAsyncHandler(numRecordsOutErrorsCounter);
+        this.hBaseWriterAsyncHandler =
+                new HBaseWriterAsyncHandler(numRecordsOutErrorsCounter, maxRecordWriteAttempts);
     }
 
     /**

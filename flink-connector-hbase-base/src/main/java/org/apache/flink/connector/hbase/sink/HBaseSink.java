@@ -69,6 +69,9 @@ public class HBaseSink<T> extends AsyncSinkBase<T, SerializableMutation> {
      */
     private final byte[] serializedHadoopConfiguration;
 
+    /** Maximum times a record will be attempted to be written to HBase. */
+    private final long maxRecordWriteAttempts;
+
     public HBaseSink(
             ElementConverter<T, SerializableMutation> elementConverter,
             int maxBatchSize,
@@ -79,6 +82,7 @@ public class HBaseSink<T> extends AsyncSinkBase<T, SerializableMutation> {
             long maxRecordSizeInBytes,
             long requestTimeoutMS,
             boolean failOnTimeout,
+            long maxRecordWriteAttempts,
             String tableName,
             Configuration configuration) {
         super(
@@ -100,6 +104,7 @@ public class HBaseSink<T> extends AsyncSinkBase<T, SerializableMutation> {
         this.tableName = tableName;
         this.serializedHadoopConfiguration =
                 HBaseConfigurationUtil.serializeConfiguration(configuration);
+        this.maxRecordWriteAttempts = maxRecordWriteAttempts;
     }
 
     /** This can be removed once rebased to Flink 2.0. */
@@ -116,6 +121,7 @@ public class HBaseSink<T> extends AsyncSinkBase<T, SerializableMutation> {
                 getMaxRecordSizeInBytes(),
                 getRequestTimeoutMS(),
                 getFailOnTimeout(),
+                maxRecordWriteAttempts,
                 tableName,
                 HBaseConfigurationUtil.deserializeConfiguration(
                         serializedHadoopConfiguration, null));
@@ -135,6 +141,7 @@ public class HBaseSink<T> extends AsyncSinkBase<T, SerializableMutation> {
                 getMaxRecordSizeInBytes(),
                 getRequestTimeoutMS(),
                 getFailOnTimeout(),
+                maxRecordWriteAttempts,
                 tableName,
                 HBaseConfigurationUtil.deserializeConfiguration(
                         serializedHadoopConfiguration, null));
@@ -156,6 +163,7 @@ public class HBaseSink<T> extends AsyncSinkBase<T, SerializableMutation> {
                 getMaxRecordSizeInBytes(),
                 getRequestTimeoutMS(),
                 getFailOnTimeout(),
+                maxRecordWriteAttempts,
                 tableName,
                 HBaseConfigurationUtil.deserializeConfiguration(
                         serializedHadoopConfiguration, null));

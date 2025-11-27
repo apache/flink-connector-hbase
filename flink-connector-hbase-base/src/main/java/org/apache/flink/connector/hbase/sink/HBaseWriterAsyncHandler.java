@@ -10,6 +10,7 @@ import org.apache.hadoop.hbase.client.Mutation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -17,7 +18,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.apache.flink.util.Preconditions.checkArgument;
@@ -31,9 +31,12 @@ public class HBaseWriterAsyncHandler {
     private static final Logger LOG = LoggerFactory.getLogger(HBaseWriterAsyncHandler.class);
 
     private final Counter numRecordsOutErrorsCounter;
+    private final long maxRecordWriteAttempts;
 
-    public HBaseWriterAsyncHandler(Counter numRecordsOutErrorsCounter) {
+    public HBaseWriterAsyncHandler(
+            Counter numRecordsOutErrorsCounter, long maxRecordWriteAttempts) {
         this.numRecordsOutErrorsCounter = numRecordsOutErrorsCounter;
+        this.maxRecordWriteAttempts = maxRecordWriteAttempts;
     }
 
     /**
@@ -114,6 +117,7 @@ public class HBaseWriterAsyncHandler {
 
         numRecordsOutErrorsCounter.inc(failedMutations.size());
 
+        List<SerializableMutation> retryEntries = new ArrayList<>();
         for (FailedMutation failedMutation : failedMutations) {
             LOG.warn("Mutation failed with exception", failedMutation.getThrowable());
 
@@ -123,12 +127,21 @@ public class HBaseWriterAsyncHandler {
                                 failedMutation.getThrowable()));
                 return;
             }
+
+            SerializableMutation serializableMutation = failedMutation.getMutation();
+            serializableMutation.incWriteAttempts();
+            if (maxRecordWriteAttempts > 0
+                    && serializableMutation.getRecordWriteAttempts() > maxRecordWriteAttempts) {
+                resultHandler.completeExceptionally(
+                        new HBaseSinkException.HBaseSinkMutationException(
+                                failedMutation.getThrowable()));
+                return;
+            }
+
+            retryEntries.add(serializableMutation);
         }
 
-        resultHandler.retryForEntries(
-                failedMutations.stream()
-                        .map(FailedMutation::getWrappedMutation)
-                        .collect(Collectors.toList()));
+        resultHandler.retryForEntries(retryEntries);
     }
 
     /**
@@ -162,7 +175,7 @@ public class HBaseWriterAsyncHandler {
             this.throwable = throwable;
         }
 
-        public SerializableMutation getWrappedMutation() {
+        public SerializableMutation getMutation() {
             return mutation;
         }
 

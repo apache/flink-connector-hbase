@@ -56,6 +56,7 @@ import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_FAIL_ON_TIMEOUT;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_IGNORE_NULL_VALUE;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_MAX_RECORD_SIZE;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_MAX_RECORD_WRITE_ATTEMPTS;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_PARALLELISM;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_REQUEST_TIMEOUT;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.TABLE_NAME;
@@ -130,6 +131,7 @@ public class HBase2DynamicTableFactory extends AsyncDynamicTableSinkFactory
                         .setRequestTimeoutMS(config.get(SINK_REQUEST_TIMEOUT).toMillis())
                         .setMaxRecordSizeInBytes(config.get(SINK_MAX_RECORD_SIZE))
                         .setFailOnTimeout(config.get(SINK_FAIL_ON_TIMEOUT))
+                        .setMaxRecordWriteAttempts(config.get(SINK_MAX_RECORD_WRITE_ATTEMPTS))
                         .setTableName(config.get(TABLE_NAME))
                         .setConfiguration(getHBaseConfiguration(config))
                         .setNullStringLiteral(config.get(NULL_STRING_LITERAL))
@@ -173,6 +175,7 @@ public class HBase2DynamicTableFactory extends AsyncDynamicTableSinkFactory
                         SINK_MAX_RECORD_SIZE,
                         SINK_REQUEST_TIMEOUT,
                         SINK_FAIL_ON_TIMEOUT,
+                        SINK_MAX_RECORD_WRITE_ATTEMPTS,
                         LOOKUP_ASYNC,
                         LOOKUP_CACHE_MAX_ROWS,
                         LOOKUP_CACHE_TTL,
@@ -203,6 +206,7 @@ public class HBase2DynamicTableFactory extends AsyncDynamicTableSinkFactory
                         SINK_MAX_RECORD_SIZE,
                         SINK_REQUEST_TIMEOUT,
                         SINK_FAIL_ON_TIMEOUT,
+                        SINK_MAX_RECORD_WRITE_ATTEMPTS,
                         LOOKUP_CACHE_MAX_ROWS,
                         LOOKUP_CACHE_TTL,
                         LOOKUP_MAX_RETRIES);

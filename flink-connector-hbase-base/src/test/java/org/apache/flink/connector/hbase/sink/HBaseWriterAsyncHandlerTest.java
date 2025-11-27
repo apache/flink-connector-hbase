@@ -23,15 +23,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 /** Tests for {@link HBaseWriterAsyncHandler}. */
 class HBaseWriterAsyncHandlerTest {
 
-    private final Counter counter = new TestCounter();
+    private final Counter errorCounter = new TestCounter();
     private final TestResultHandler resultHandler = new TestResultHandler();
-    private final HBaseWriterAsyncHandler handler = new HBaseWriterAsyncHandler(counter);
+    private final HBaseWriterAsyncHandler handler = new HBaseWriterAsyncHandler(errorCounter, 1);
 
     @Test
     void testHBaseWriteAsyncHandlerEmpty() {
         handler.handleWriteFutures(Collections.emptyList(), Collections.emptyList(), resultHandler);
 
-        assertThat(counter.getCount()).isEqualTo(0);
+        assertThat(errorCounter.getCount()).isEqualTo(0);
         assertThat(resultHandler.getComplete()).isTrue();
     }
 
@@ -49,7 +49,7 @@ class HBaseWriterAsyncHandlerTest {
         handler.handleWriteFutures(futures, mutations, resultHandler);
         futures.forEach(f -> f.complete(null));
 
-        assertThat(counter.getCount()).isEqualTo(0);
+        assertThat(errorCounter.getCount()).isEqualTo(0);
         assertThat(resultHandler.getComplete()).isTrue();
     }
 
@@ -80,8 +80,44 @@ class HBaseWriterAsyncHandlerTest {
             }
         }
 
-        assertThat(resultHandler.getEntriesRetried()).hasSameElementsAs(failedMutations);
-        assertThat(counter.getCount()).isEqualTo(250);
+        assertThat(resultHandler.getEntriesRetried())
+                .hasSameElementsAs(failedMutations)
+                .allSatisfy(m -> assertThat(m.getRecordWriteAttempts()).isEqualTo(1));
+        assertThat(errorCounter.getCount()).isEqualTo(250);
+    }
+
+    /** Some record will exceed the maximum write attempts. */
+    @Test
+    void testHBaseWriteAsyncHandlerMaxWriteAttempts() {
+        List<SerializableMutation> allMutations =
+                IntStream.range(0, 10)
+                        .mapToObj(__ -> generateMutation())
+                        .collect(Collectors.toList());
+
+        // Write attempts will be 1, which is the threshold, so it should fail.
+        allMutations.get(9).incWriteAttempts();
+
+        List<CompletableFuture<Mutation>> futures =
+                IntStream.range(0, 10)
+                        .mapToObj(__ -> new CompletableFuture<Mutation>())
+                        .collect(Collectors.toList());
+
+        handler.handleWriteFutures(futures, allMutations, resultHandler);
+
+        for (int i = 0; i < 9; i++) {
+            futures.get(i).complete(null);
+        }
+        futures.get(9)
+                .completeExceptionally(
+                        new HBaseSinkException.HBaseSinkMutationException(
+                                new RuntimeException("test")));
+
+        assertThat(errorCounter.getCount()).isEqualTo(1);
+        assertThat(resultHandler.getEntriesRetried()).isNull();
+        assertThat(resultHandler.getException())
+                .isExactlyInstanceOf(HBaseSinkException.HBaseSinkMutationException.class)
+                .hasRootCauseExactlyInstanceOf(RuntimeException.class)
+                .hasRootCauseMessage("test");
     }
 
     /** Exactly one mutation will throw an exception that cannot be retried, the job should fail. */
@@ -108,7 +144,7 @@ class HBaseWriterAsyncHandlerTest {
             }
         }
 
-        assertThat(counter.getCount()).isEqualTo(1);
+        assertThat(errorCounter.getCount()).isEqualTo(1);
         assertThat(resultHandler.getException())
                 .isExactlyInstanceOf(HBaseSinkException.HBaseSinkMutationException.class)
                 .hasRootCauseExactlyInstanceOf(DoNotRetryIOException.class)

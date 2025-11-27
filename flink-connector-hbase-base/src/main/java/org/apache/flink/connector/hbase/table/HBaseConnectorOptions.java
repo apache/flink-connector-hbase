@@ -122,6 +122,13 @@ public class HBaseConnectorOptions {
                     .withDescription(
                             "Whether to fail the job when a request times out. If false, timed-out requests will be logged but the job will continue processing. If true, a timeout will cause the job to fail.");
 
+    public static final ConfigOption<Long> SINK_MAX_RECORD_WRITE_ATTEMPTS =
+            ConfigOptions.key("sink.max-request-write-attempts")
+                    .longType()
+                    .defaultValue(0L)
+                    .withDescription(
+                            "Maximum number of attempts to save a record to HBase before the job fails. Set to 0 for unlimited retries.");
+
     public static final ConfigOption<Boolean> SINK_IGNORE_NULL_VALUE =
             ConfigOptions.key("sink.ignore-null-value")
                     .booleanType()

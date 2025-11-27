@@ -34,6 +34,7 @@ public class HBaseStateSerializer extends AsyncSinkWriterStateSerializer<Seriali
                             mutation.getClass()));
         }
 
+        out.writeLong(request.getRecordWriteAttempts());
         ClientProtos.MutationProto proto = ProtobufUtil.toMutation(type, mutation);
         proto.writeDelimitedTo(out);
     }
@@ -41,9 +42,10 @@ public class HBaseStateSerializer extends AsyncSinkWriterStateSerializer<Seriali
     @Override
     protected SerializableMutation deserializeRequestFromStream(
             long requestSize, DataInputStream in) throws IOException {
+        long retryNum = in.readLong();
         ClientProtos.MutationProto proto = ClientProtos.MutationProto.parseDelimitedFrom(in);
         Mutation mutation = ProtobufUtil.toMutation(proto);
-        return new SerializableMutation(mutation);
+        return new SerializableMutation(mutation, retryNum);
     }
 
     @Override
