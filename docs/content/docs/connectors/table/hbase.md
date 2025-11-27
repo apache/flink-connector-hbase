@@ -236,6 +236,15 @@ Connector Options
       </td>
     </tr>
     <tr>
+      <td><h5>sink.max-request-write-attempts</h5></td>
+      <td>optional</td>
+      <td>yes</td>
+      <td style="word-wrap: break-word;">0</td>
+      <td>Long</td>
+      <td>Maximum number of attempts to save a record to HBase before the job fails. Set to 0 for unlimited retries.
+      </td>
+    </tr>
+    <tr>
       <td><h5>sink.max-record-size</h5></td>
       <td>optional</td>
       <td>yes</td>
