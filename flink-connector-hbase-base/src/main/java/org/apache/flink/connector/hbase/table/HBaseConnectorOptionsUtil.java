@@ -20,7 +20,6 @@ package org.apache.flink.connector.hbase.table;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.configuration.ReadableConfig;
-import org.apache.flink.connector.hbase.options.HBaseWriteOptions;
 import org.apache.flink.connector.hbase.util.HBaseConfigurationUtil;
 import org.apache.flink.connector.hbase.util.HBaseTableSchema;
 import org.apache.flink.table.types.DataType;
@@ -31,11 +30,6 @@ import org.apache.hadoop.hbase.HConstants;
 import java.util.Map;
 import java.util.Properties;
 
-import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_INTERVAL;
-import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_MAX_ROWS;
-import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_MAX_SIZE;
-import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_IGNORE_NULL_VALUE;
-import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_PARALLELISM;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.ZOOKEEPER_QUORUM;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.ZOOKEEPER_ZNODE_PARENT;
 
@@ -81,18 +75,6 @@ public class HBaseConnectorOptionsUtil {
                             + "A row key field is defined as an atomic type, "
                             + "column families and qualifiers are defined as ROW type.");
         }
-    }
-
-    public static HBaseWriteOptions getHBaseWriteOptions(ReadableConfig tableOptions) {
-        HBaseWriteOptions.Builder builder = HBaseWriteOptions.builder();
-        builder.setBufferFlushIntervalMillis(
-                tableOptions.get(SINK_BUFFER_FLUSH_INTERVAL).toMillis());
-        builder.setBufferFlushMaxRows(tableOptions.get(SINK_BUFFER_FLUSH_MAX_ROWS));
-        builder.setBufferFlushMaxSizeInBytes(
-                tableOptions.get(SINK_BUFFER_FLUSH_MAX_SIZE).getBytes());
-        builder.setIgnoreNullValue(tableOptions.get(SINK_IGNORE_NULL_VALUE));
-        builder.setParallelism(tableOptions.getOptional(SINK_PARALLELISM).orElse(null));
-        return builder.build();
     }
 
     /** config HBase Configuration. */

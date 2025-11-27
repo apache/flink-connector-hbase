@@ -18,6 +18,9 @@
 
 package org.apache.flink.connector.hbase.sink;
 
+import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.api.connector.sink2.SinkWriter;
+import org.apache.flink.connector.base.sink.writer.ElementConverter;
 import org.apache.flink.connector.hbase.sink.WritableMetadata.TimeToLiveMetadata;
 import org.apache.flink.connector.hbase.sink.WritableMetadata.TimestampMetadata;
 import org.apache.flink.connector.hbase.util.HBaseSerde;
@@ -31,10 +34,10 @@ import org.apache.hadoop.hbase.client.Mutation;
 import java.util.List;
 
 /**
- * An implementation of {@link HBaseMutationConverter} which converts {@link RowData} into {@link
+ * An implementation of {@link ElementConverter} which converts {@link RowData} into {@link
  * Mutation}.
  */
-public class RowDataToMutationConverter implements HBaseMutationConverter<RowData> {
+public class RowDataToMutationElementConverter implements ElementConverter<RowData, Mutation> {
     private static final long serialVersionUID = 1L;
 
     private final HBaseTableSchema schema;
@@ -44,7 +47,7 @@ public class RowDataToMutationConverter implements HBaseMutationConverter<RowDat
     private final TimeToLiveMetadata timeToLiveMetadata;
     private transient HBaseSerde serde;
 
-    public RowDataToMutationConverter(
+    public RowDataToMutationElementConverter(
             HBaseTableSchema schema,
             DataType physicalDataType,
             List<String> metadataKeys,
@@ -58,12 +61,13 @@ public class RowDataToMutationConverter implements HBaseMutationConverter<RowDat
     }
 
     @Override
-    public void open() {
+    public void open(Sink.InitContext context) {
+        ElementConverter.super.open(context);
         this.serde = new HBaseSerde(schema, nullStringLiteral, ignoreNullValue);
     }
 
     @Override
-    public Mutation convertToMutation(RowData record) {
+    public Mutation apply(RowData record, SinkWriter.Context context) {
         Long timestamp = timestampMetadata.read(record);
         Long timeToLive = timeToLiveMetadata.read(record);
         RowKind kind = record.getRowKind();

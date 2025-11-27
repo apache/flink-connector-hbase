@@ -68,7 +68,7 @@ public class HBaseTestingClusterAutoStarter {
     private static final Range<String> HADOOP_VERSION_RANGE =
             Range.between("2.8.0", "3.0.3", VersionUtil::compareVersions);
 
-    private static HBaseTestingUtility hbaseTestingUtility;
+    protected static HBaseTestingUtility hbaseTestingUtility;
     private static Admin admin = null;
     private static List<TableName> createdTables = new ArrayList<>();
 

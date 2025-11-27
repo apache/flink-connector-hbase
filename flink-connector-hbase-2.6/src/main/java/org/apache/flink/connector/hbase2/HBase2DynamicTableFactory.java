@@ -21,7 +21,9 @@ package org.apache.flink.connector.hbase2;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ReadableConfig;
-import org.apache.flink.connector.hbase.options.HBaseWriteOptions;
+import org.apache.flink.connector.base.table.AsyncDynamicTableSinkFactory;
+import org.apache.flink.connector.base.table.AsyncSinkConnectorOptions;
+import org.apache.flink.connector.base.table.sink.options.AsyncSinkConfigurationValidator;
 import org.apache.flink.connector.hbase.util.HBaseTableSchema;
 import org.apache.flink.connector.hbase2.sink.HBaseDynamicTableSink;
 import org.apache.flink.connector.hbase2.source.HBaseDynamicTableSource;
@@ -30,7 +32,6 @@ import org.apache.flink.table.connector.source.DynamicTableSource;
 import org.apache.flink.table.connector.source.lookup.LookupOptions;
 import org.apache.flink.table.connector.source.lookup.cache.DefaultLookupCache;
 import org.apache.flink.table.connector.source.lookup.cache.LookupCache;
-import org.apache.flink.table.factories.DynamicTableSinkFactory;
 import org.apache.flink.table.factories.DynamicTableSourceFactory;
 import org.apache.flink.table.factories.FactoryUtil.TableFactoryHelper;
 
@@ -38,6 +39,8 @@ import org.apache.hadoop.conf.Configuration;
 
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -50,21 +53,24 @@ import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.NULL_
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_INTERVAL;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_MAX_ROWS;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_BUFFER_FLUSH_MAX_SIZE;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_FAIL_ON_TIMEOUT;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_IGNORE_NULL_VALUE;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_MAX_RECORD_SIZE;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_MAX_RECORD_WRITE_ATTEMPTS;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_PARALLELISM;
+import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.SINK_REQUEST_TIMEOUT;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.TABLE_NAME;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.ZOOKEEPER_QUORUM;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptions.ZOOKEEPER_ZNODE_PARENT;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptionsUtil.PROPERTIES_PREFIX;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptionsUtil.getHBaseConfiguration;
-import static org.apache.flink.connector.hbase.table.HBaseConnectorOptionsUtil.getHBaseWriteOptions;
 import static org.apache.flink.connector.hbase.table.HBaseConnectorOptionsUtil.validatePrimaryKey;
 import static org.apache.flink.table.factories.FactoryUtil.createTableFactoryHelper;
 
 /** HBase connector factory. */
 @Internal
-public class HBase2DynamicTableFactory
-        implements DynamicTableSourceFactory, DynamicTableSinkFactory {
+public class HBase2DynamicTableFactory extends AsyncDynamicTableSinkFactory
+        implements DynamicTableSourceFactory {
 
     private static final String IDENTIFIER = "hbase-2.6";
 
@@ -116,21 +122,30 @@ public class HBase2DynamicTableFactory
         TableFactoryHelper helper = createTableFactoryHelper(this, context);
         helper.validateExcept(PROPERTIES_PREFIX);
 
-        final ReadableConfig tableOptions = helper.getOptions();
+        final ReadableConfig config = helper.getOptions();
 
         validatePrimaryKey(context.getPhysicalRowDataType(), context.getPrimaryKeyIndexes());
 
-        String tableName = tableOptions.get(TABLE_NAME);
-        Configuration hbaseConf = getHBaseConfiguration(tableOptions);
-        HBaseWriteOptions hBaseWriteOptions = getHBaseWriteOptions(tableOptions);
-        String nullStringLiteral = tableOptions.get(NULL_STRING_LITERAL);
+        HBaseDynamicTableSink.HBaseDynamicSinkBuilder builder =
+                HBaseDynamicTableSink.builder()
+                        .setRequestTimeoutMS(config.get(SINK_REQUEST_TIMEOUT).toMillis())
+                        .setMaxRecordSizeInBytes(config.get(SINK_MAX_RECORD_SIZE))
+                        .setFailOnTimeout(config.get(SINK_FAIL_ON_TIMEOUT))
+                        .setMaxRecordWriteAttempts(config.get(SINK_MAX_RECORD_WRITE_ATTEMPTS))
+                        .setTableName(config.get(TABLE_NAME))
+                        .setConfiguration(getHBaseConfiguration(config))
+                        .setNullStringLiteral(config.get(NULL_STRING_LITERAL))
+                        .setPhysicalDataType(context.getPhysicalRowDataType())
+                        .setParallelism(config.get(SINK_PARALLELISM))
+                        .setIgnoreNullValue(config.get(SINK_IGNORE_NULL_VALUE));
 
-        return new HBaseDynamicTableSink(
-                tableName,
-                context.getPhysicalRowDataType(),
-                hbaseConf,
-                hBaseWriteOptions,
-                nullStringLiteral);
+        AsyncSinkConfigurationValidator asyncValidator =
+                new AsyncSinkConfigurationValidator(config);
+
+        addAsyncOptionsToBuilder(getDeprecatedAsyncSinkOptions(config), builder);
+        addAsyncOptionsToBuilder(asyncValidator.getValidatedConfigurations(), builder);
+
+        return builder.build();
     }
 
     @Override
@@ -147,42 +162,79 @@ public class HBase2DynamicTableFactory
 
     @Override
     public Set<ConfigOption<?>> optionalOptions() {
-        Set<ConfigOption<?>> set = new HashSet<>();
-        set.add(ZOOKEEPER_ZNODE_PARENT);
-        set.add(ZOOKEEPER_QUORUM);
-        set.add(NULL_STRING_LITERAL);
-        set.add(SINK_BUFFER_FLUSH_MAX_SIZE);
-        set.add(SINK_BUFFER_FLUSH_MAX_ROWS);
-        set.add(SINK_BUFFER_FLUSH_INTERVAL);
-        set.add(SINK_PARALLELISM);
-        set.add(SINK_IGNORE_NULL_VALUE);
-        set.add(LOOKUP_ASYNC);
-        set.add(LOOKUP_CACHE_MAX_ROWS);
-        set.add(LOOKUP_CACHE_TTL);
-        set.add(LOOKUP_MAX_RETRIES);
-        set.add(LookupOptions.CACHE_TYPE);
-        set.add(LookupOptions.MAX_RETRIES);
-        set.add(LookupOptions.PARTIAL_CACHE_EXPIRE_AFTER_ACCESS);
-        set.add(LookupOptions.PARTIAL_CACHE_EXPIRE_AFTER_WRITE);
-        set.add(LookupOptions.PARTIAL_CACHE_CACHE_MISSING_KEY);
-        set.add(LookupOptions.PARTIAL_CACHE_MAX_ROWS);
-        return set;
+        Stream<ConfigOption<?>> hbaseOptions =
+                Stream.of(
+                        ZOOKEEPER_ZNODE_PARENT,
+                        ZOOKEEPER_QUORUM,
+                        NULL_STRING_LITERAL,
+                        SINK_BUFFER_FLUSH_MAX_SIZE,
+                        SINK_BUFFER_FLUSH_MAX_ROWS,
+                        SINK_BUFFER_FLUSH_INTERVAL,
+                        SINK_PARALLELISM,
+                        SINK_IGNORE_NULL_VALUE,
+                        SINK_MAX_RECORD_SIZE,
+                        SINK_REQUEST_TIMEOUT,
+                        SINK_FAIL_ON_TIMEOUT,
+                        SINK_MAX_RECORD_WRITE_ATTEMPTS,
+                        LOOKUP_ASYNC,
+                        LOOKUP_CACHE_MAX_ROWS,
+                        LOOKUP_CACHE_TTL,
+                        LOOKUP_MAX_RETRIES,
+                        LookupOptions.CACHE_TYPE,
+                        LookupOptions.MAX_RETRIES,
+                        LookupOptions.PARTIAL_CACHE_EXPIRE_AFTER_ACCESS,
+                        LookupOptions.PARTIAL_CACHE_EXPIRE_AFTER_WRITE,
+                        LookupOptions.PARTIAL_CACHE_CACHE_MISSING_KEY,
+                        LookupOptions.PARTIAL_CACHE_MAX_ROWS);
+        Stream<ConfigOption<?>> asyncOptions = super.optionalOptions().stream();
+
+        return Stream.concat(hbaseOptions, asyncOptions).collect(Collectors.toSet());
     }
 
     @Override
     public Set<ConfigOption<?>> forwardOptions() {
-        return Stream.of(
+        Stream<ConfigOption<?>> hbaseOptions =
+                Stream.of(
                         TABLE_NAME,
                         ZOOKEEPER_ZNODE_PARENT,
                         ZOOKEEPER_QUORUM,
                         NULL_STRING_LITERAL,
-                        LOOKUP_CACHE_MAX_ROWS,
-                        LOOKUP_CACHE_TTL,
-                        LOOKUP_MAX_RETRIES,
                         SINK_BUFFER_FLUSH_MAX_SIZE,
                         SINK_BUFFER_FLUSH_MAX_ROWS,
                         SINK_BUFFER_FLUSH_INTERVAL,
-                        SINK_IGNORE_NULL_VALUE)
-                .collect(Collectors.toSet());
+                        SINK_IGNORE_NULL_VALUE,
+                        SINK_MAX_RECORD_SIZE,
+                        SINK_REQUEST_TIMEOUT,
+                        SINK_FAIL_ON_TIMEOUT,
+                        SINK_MAX_RECORD_WRITE_ATTEMPTS,
+                        LOOKUP_CACHE_MAX_ROWS,
+                        LOOKUP_CACHE_TTL,
+                        LOOKUP_MAX_RETRIES);
+        Stream<ConfigOption<?>> asyncOptions = super.optionalOptions().stream();
+
+        return Stream.concat(hbaseOptions, asyncOptions).collect(Collectors.toSet());
+    }
+
+    private Properties getDeprecatedAsyncSinkOptions(ReadableConfig config) {
+        Properties properties = new Properties();
+        Optional.ofNullable(config.get(SINK_BUFFER_FLUSH_MAX_SIZE))
+                .ifPresent(
+                        flushBufferSize ->
+                                properties.put(
+                                        AsyncSinkConnectorOptions.FLUSH_BUFFER_SIZE.key(),
+                                        flushBufferSize.getBytes()));
+        Optional.ofNullable(config.get(SINK_BUFFER_FLUSH_MAX_ROWS))
+                .ifPresent(
+                        maxBatchSize ->
+                                properties.put(
+                                        AsyncSinkConnectorOptions.MAX_BATCH_SIZE.key(),
+                                        maxBatchSize));
+        Optional.ofNullable(config.get(SINK_BUFFER_FLUSH_INTERVAL))
+                .ifPresent(
+                        timeout ->
+                                properties.put(
+                                        AsyncSinkConnectorOptions.FLUSH_BUFFER_TIMEOUT.key(),
+                                        timeout.toMillis()));
+        return properties;
     }
 }

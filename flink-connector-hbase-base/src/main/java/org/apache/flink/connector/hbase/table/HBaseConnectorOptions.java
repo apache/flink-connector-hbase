@@ -27,6 +27,10 @@ import org.apache.flink.table.factories.FactoryUtil;
 
 import java.time.Duration;
 
+import static org.apache.flink.connector.base.table.AsyncSinkConnectorOptions.FLUSH_BUFFER_SIZE;
+import static org.apache.flink.connector.base.table.AsyncSinkConnectorOptions.FLUSH_BUFFER_TIMEOUT;
+import static org.apache.flink.connector.base.table.AsyncSinkConnectorOptions.MAX_BATCH_SIZE;
+
 /** Options for the HBase connector. */
 @PublicEvolving
 public class HBaseConnectorOptions {
@@ -60,33 +64,70 @@ public class HBaseConnectorOptions {
                             "Representation for null values for string fields. HBase source and "
                                     + "sink encodes/decodes empty bytes as null values for all types except string type.");
 
+    @Deprecated
     public static final ConfigOption<MemorySize> SINK_BUFFER_FLUSH_MAX_SIZE =
             ConfigOptions.key("sink.buffer-flush.max-size")
                     .memoryType()
-                    .defaultValue(MemorySize.parse("2mb"))
+                    .noDefaultValue()
                     .withDescription(
                             "Writing option, maximum size in memory of buffered rows for each "
                                     + "writing request. This can improve performance for writing data to HBase database, "
-                                    + "but may increase the latency. Can be set to '0' to disable it. ");
+                                    + "but may increase the latency. "
+                                    + String.format(
+                                            "This is a deprecated key and will be mapped to %s.",
+                                            FLUSH_BUFFER_SIZE.key()));
 
+    @Deprecated
     public static final ConfigOption<Integer> SINK_BUFFER_FLUSH_MAX_ROWS =
             ConfigOptions.key("sink.buffer-flush.max-rows")
                     .intType()
-                    .defaultValue(1000)
+                    .noDefaultValue()
                     .withDescription(
                             "Writing option, maximum number of rows to buffer for each writing request. "
                                     + "This can improve performance for writing data to HBase database, but may increase the latency. "
-                                    + "Can be set to '0' to disable it.");
+                                    + String.format(
+                                            "This is a deprecated key and will be mapped to %s.",
+                                            MAX_BATCH_SIZE.key()));
 
+    @Deprecated
     public static final ConfigOption<Duration> SINK_BUFFER_FLUSH_INTERVAL =
             ConfigOptions.key("sink.buffer-flush.interval")
                     .durationType()
-                    .defaultValue(Duration.ofSeconds(1))
+                    .noDefaultValue()
                     .withDescription(
                             "Writing option, the interval to flush any buffered rows. "
                                     + "This can improve performance for writing data to HBase database, but may increase the latency. "
-                                    + "Can be set to '0' to disable it. Note, both 'sink.buffer-flush.max-size' and 'sink.buffer-flush.max-rows' "
-                                    + "can be set to '0' with the flush interval set allowing for complete async processing of buffered actions.");
+                                    + String.format(
+                                            "This is a deprecated key and will be mapped to %s.",
+                                            FLUSH_BUFFER_TIMEOUT.key()));
+
+    public static final ConfigOption<Long> SINK_MAX_RECORD_SIZE =
+            ConfigOptions.key("sink.max-record-size")
+                    .longType()
+                    .defaultValue(1048576L)
+                    .withDescription(
+                            "The maximum size in bytes of a single record. Records bigger than this will cause the job to fail.");
+
+    public static final ConfigOption<Duration> SINK_REQUEST_TIMEOUT =
+            ConfigOptions.key("sink.request-timeout")
+                    .durationType()
+                    .defaultValue(Duration.ofMinutes(10))
+                    .withDescription(
+                            "The maximum time to wait for a batch of HBase requests to complete before timing out.");
+
+    public static final ConfigOption<Boolean> SINK_FAIL_ON_TIMEOUT =
+            ConfigOptions.key("sink.fail-on-timeout")
+                    .booleanType()
+                    .defaultValue(false)
+                    .withDescription(
+                            "Whether to fail the job when a request times out. If false, timed-out requests will be logged but the job will continue processing. If true, a timeout will cause the job to fail.");
+
+    public static final ConfigOption<Long> SINK_MAX_RECORD_WRITE_ATTEMPTS =
+            ConfigOptions.key("sink.max-request-write-attempts")
+                    .longType()
+                    .defaultValue(0L)
+                    .withDescription(
+                            "Maximum number of attempts to save a record to HBase before the job fails. Set to 0 for unlimited retries.");
 
     public static final ConfigOption<Boolean> SINK_IGNORE_NULL_VALUE =
             ConfigOptions.key("sink.ignore-null-value")

@@ -21,10 +21,7 @@ package org.apache.flink.connector.hbase2;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
-import org.apache.flink.configuration.Configuration;
-import org.apache.flink.connector.hbase.sink.HBaseSinkFunction;
-import org.apache.flink.connector.hbase.sink.RowDataToMutationConverter;
-import org.apache.flink.connector.hbase.util.HBaseConfigurationUtil;
+import org.apache.flink.connector.hbase.sink.HBaseSinkException;
 import org.apache.flink.connector.hbase.util.HBaseTableSchema;
 import org.apache.flink.connector.hbase2.source.AbstractTableInputFormat;
 import org.apache.flink.connector.hbase2.source.HBaseRowDataInputFormat;
@@ -35,7 +32,6 @@ import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableEnvironment;
 import org.apache.flink.table.api.TableResult;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.functions.ScalarFunction;
 import org.apache.flink.table.planner.factories.TestValuesTableFactory;
 import org.apache.flink.test.util.TestBaseUtils;
@@ -43,10 +39,11 @@ import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
 import org.apache.flink.util.CollectionUtil;
 
-import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.TableNotFoundException;
+import org.apache.hadoop.hbase.regionserver.NoSuchColumnFamilyException;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -59,6 +56,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -66,6 +64,7 @@ import java.util.stream.StreamSupport;
 import static org.apache.flink.table.api.Expressions.$;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /** IT cases for HBase connector (including source and sink). */
 class HBaseConnectorITCase extends HBaseTestBase {
@@ -336,6 +335,115 @@ class HBaseConnectorITCase extends HBaseTestBase {
         List<Row> results = CollectionUtil.iteratorToList(tableResult2.collect());
 
         TestBaseUtils.compareResultAsText(results, String.join("", expected));
+    }
+
+    @Test
+    void testTableSinkWithFailedMutation() {
+        StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
+        StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
+
+        String dataId =
+                TestValuesTableFactory.registerData(
+                        Collections.singletonList(
+                                Row.ofKind(
+                                        RowKind.INSERT,
+                                        1,
+                                        Row.of("Hello1"),
+                                        Row.of("Hello1", 200L))));
+        tEnv.executeSql(
+                "CREATE TABLE source_table ("
+                        + " rowkey INT,"
+                        + " family1 ROW<name STRING>,"
+                        + " family2 ROW<col1 STRING, col2 BIGINT>,"
+                        + " PRIMARY KEY (rowkey) NOT ENFORCED"
+                        + ") WITH ("
+                        + " 'connector' = 'values',"
+                        + " 'data-id' = '"
+                        + dataId
+                        + "',"
+                        + " 'changelog-mode'='I,UA,UB,D'"
+                        + ")");
+
+        // register HBase table for sink
+        tEnv.executeSql(
+                "CREATE TABLE sink_table ("
+                        + " rowkey INT,"
+                        + " family1 ROW<name STRING>,"
+                        + " family2 ROW<col1 STRING, col2 BIGINT>,"
+                        + " PRIMARY KEY (rowkey) NOT ENFORCED"
+                        + ") WITH ("
+                        + " 'connector' = 'hbase-2.6',"
+                        + " 'table-name' = '"
+                        + TEST_TABLE_4
+                        + "',"
+                        + " 'zookeeper.quorum' = '"
+                        + getZookeeperQuorum()
+                        + "'"
+                        + ")");
+
+        assertThatThrownBy(
+                        () ->
+                                tEnv.executeSql("INSERT INTO sink_table SELECT * FROM source_table")
+                                        .await())
+                .isExactlyInstanceOf(ExecutionException.class)
+                .satisfies(
+                        ex -> {
+                            Throwable cause = ex;
+                            while (cause != null) {
+                                if (cause instanceof HBaseSinkException) {
+                                    return;
+                                }
+                                cause = cause.getCause();
+                            }
+                            fail("Expected to find HBaseSinkException in cause chain");
+                        })
+                .hasRootCauseExactlyInstanceOf(NoSuchColumnFamilyException.class);
+    }
+
+    /** The INSERT statement should fail as the max record size is too low. */
+    @Test
+    void testTableSinkWithRecordSizeTooBig() {
+        StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
+        StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
+
+        String dataId =
+                TestValuesTableFactory.registerData(
+                        Collections.singletonList(Row.ofKind(RowKind.INSERT, 1, Row.of("Hello1"))));
+        tEnv.executeSql(
+                "CREATE TABLE source_table ("
+                        + " rowkey INT,"
+                        + " family1 ROW<name STRING>,"
+                        + " PRIMARY KEY (rowkey) NOT ENFORCED"
+                        + ") WITH ("
+                        + " 'connector' = 'values',"
+                        + " 'data-id' = '"
+                        + dataId
+                        + "',"
+                        + " 'changelog-mode'='I,UA,UB,D'"
+                        + ")");
+
+        tEnv.executeSql(
+                "CREATE TABLE sink_table ("
+                        + " rowkey INT,"
+                        + " family1 ROW<name STRING>,"
+                        + " PRIMARY KEY (rowkey) NOT ENFORCED"
+                        + ") WITH ("
+                        + " 'connector' = 'hbase-2.6',"
+                        + " 'sink.max-record-size' = '1',"
+                        + " 'table-name' = '"
+                        + TEST_TABLE_4
+                        + "',"
+                        + " 'zookeeper.quorum' = '"
+                        + getZookeeperQuorum()
+                        + "'"
+                        + ")");
+
+        assertThatThrownBy(
+                        () ->
+                                tEnv.executeSql("INSERT INTO sink_table SELECT * FROM source_table")
+                                        .await())
+                .isExactlyInstanceOf(ExecutionException.class)
+                .hasRootCauseExactlyInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -635,37 +743,40 @@ class HBaseConnectorITCase extends HBaseTestBase {
     }
 
     @Test
-    void testHBaseSinkFunctionTableExistence() throws Exception {
-        org.apache.hadoop.conf.Configuration hbaseConf =
-                HBaseConfigurationUtil.getHBaseConfiguration();
-        hbaseConf.set(HConstants.ZOOKEEPER_QUORUM, getZookeeperQuorum());
-        hbaseConf.set(HConstants.ZOOKEEPER_ZNODE_PARENT, "/hbase");
+    void testHBaseSinkFunctionTableExistence() {
+        StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
+        StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
 
-        HBaseTableSchema tableSchema = new HBaseTableSchema();
-        tableSchema.addColumn(FAMILY1, F1COL1, byte[].class);
+        tEnv.executeSql(
+                "CREATE TABLE hbase_table ("
+                        + " rowkey INT,"
+                        + " family1 ROW<name STRING>,"
+                        + " PRIMARY KEY (rowkey) NOT ENFORCED"
+                        + ") WITH ("
+                        + " 'connector' = 'hbase-2.6',"
+                        + " 'table-name' = 'TEST-TABLE-DOES-NOT-EXIST',"
+                        + " 'zookeeper.quorum' = '"
+                        + getZookeeperQuorum()
+                        + "'"
+                        + ")");
 
-        HBaseSinkFunction<RowData> sinkFunction =
-                new HBaseSinkFunction<>(
-                        TEST_NOT_EXISTS_TABLE,
-                        hbaseConf,
-                        new RowDataToMutationConverter(
-                                tableSchema,
-                                tableSchema.convertToDataType(),
-                                Collections.emptyList(),
-                                "null",
-                                false),
-                        2 * 1024 * 1024,
-                        1000,
-                        1000);
-
-        assertThatThrownBy(() -> sinkFunction.open(new Configuration()))
+        assertThatThrownBy(
+                        () ->
+                                tEnv.executeSql("INSERT INTO hbase_table SELECT * FROM hbase_table")
+                                        .await())
                 .getRootCause()
                 .isExactlyInstanceOf(TableNotFoundException.class);
-
-        sinkFunction.close();
     }
 
+    /**
+     * Moving to Async Sink API changed the Sink class to a yielding operator, which cannot be
+     * chained to legacy sources according to {@link
+     * org.apache.flink.streaming.api.graph.StreamingJobGraphGenerator}. It's not feasible to stop
+     * processing the source table while the sink is still processing records if the operators are
+     * not chained.
+     */
     @Test
+    @Disabled
     void testTableSinkDisabledBufferFlush() throws Exception {
         StreamExecutionEnvironment execEnv = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(execEnv, streamSettings);
@@ -676,8 +787,8 @@ class HBaseConnectorITCase extends HBaseTestBase {
                         + " family1 ROW<col1 INT>"
                         + ") WITH ("
                         + " 'connector' = 'hbase-2.6',"
-                        + " 'sink.buffer-flush.max-size' = '0',"
-                        + " 'sink.buffer-flush.max-rows' = '0',"
+                        + " 'sink.batch.max-size' = '1',"
+                        + " 'sink.requests.max-inflight' = '1',"
                         + " 'table-name' = '"
                         + TEST_TABLE_7
                         + "',"
