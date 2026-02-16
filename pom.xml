@@ -77,6 +77,7 @@ under the License.
 		<snappy.java.version>1.1.10.4</snappy.java.version>
 		<yetus.audience.annotations.version>0.13.0</yetus.audience.annotations.version>
 		<woodstox.stax2.api.version>4.2.1</woodstox.stax2.api.version>
+		<testcontainers.version>1.21.4</testcontainers.version>
 
 		<slf4j.version>1.7.36</slf4j.version>
 		<log4j.version>2.17.2</log4j.version>
@@ -395,6 +396,14 @@ under the License.
 				<groupId>org.apache.flink</groupId>
 				<artifactId>flink-architecture-tests-test</artifactId>
 				<version>${flink.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers-bom</artifactId>
+				<type>pom</type>
+				<scope>import</scope>
+				<version>${testcontainers.version}</version>
 			</dependency>
 
 			<!-- Start of dependencies for dependency convergence -->
