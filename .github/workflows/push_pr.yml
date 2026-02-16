@@ -30,7 +30,7 @@ jobs:
       matrix:
         flink: [ 1.20.3 ]
         jdk: [ '8, 11, 17' ]
-    uses: apache/flink-connector-shared-utils/.github/workflows/ci.yml@ci_utils
+    uses: ferenc-csaky/flink-connector-shared-utils/.github/workflows/ci.yml@fix/docker-api-version
     with:
       flink_version: ${{ matrix.flink }}
       jdk_version: ${{ matrix.jdk }}
