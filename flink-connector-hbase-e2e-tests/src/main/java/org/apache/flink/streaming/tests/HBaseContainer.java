@@ -44,7 +44,7 @@ public class HBaseContainer extends GenericContainer<HBaseContainer> {
                                         .env("HBASE_VERSION", hbaseVersion)
                                         .run(
                                                 "export INITRD=no"
-                                                        + " && export HBASE_DIST=\"https://dlcdn.apache.org/hbase\""
+                                                        + " && export HBASE_DIST=\"https://archive.apache.org/dist/hbase\""
                                                         + " && cd /opt"
                                                         + " && curl -SL $HBASE_DIST/$HBASE_VERSION/hbase-$HBASE_VERSION-bin.tar.gz"
                                                         + " | tar -x -z && mv hbase-${HBASE_VERSION} hbase"
