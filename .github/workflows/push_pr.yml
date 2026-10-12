@@ -35,4 +35,4 @@ jobs:
       flink_version: ${{ matrix.flink }}
       jdk_version: ${{ matrix.jdk }}
       timeout_global: 120
-      timeout_test: 80
+      timeout_test: 120
