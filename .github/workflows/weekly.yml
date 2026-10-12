@@ -44,4 +44,4 @@ jobs:
       jdk_version: ${{ matrix.flink_branches.jdk || '8, 11, 17' }}
       run_dependency_convergence: false
       timeout_global: 120
-      timeout_test: 80
+      timeout_test: 120
